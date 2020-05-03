@@ -7,7 +7,7 @@ environment:
   sdk: '>=2.7.0 <3.0.0'
 
 dependencies:
-  asn1lib: '^0.5.14'
+  asn1lib: ^0.6.4
   pointycastle: '^1.0.2'
   tuple: '^1.0.1'
 
