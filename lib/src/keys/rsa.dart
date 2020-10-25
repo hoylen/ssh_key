@@ -524,7 +524,9 @@ RSAPrivateKeyWithInfo _rsaPrivateFromOpenSSH(
 
   final prefix = privateKeyRange.nextRawBytes(8); // 64-bits
   // TODO: check/use the data in the prefix
-  // print(hexDump(prefix, name: 'OpenSSH private prefix') + '\n');
+  // What is this value? It is not well documented.
+  // print('${hexDump(prefix, name: 'OpenSSH private prefix')}\n');
+  assert(prefix.length == 8);
 
   final kt = privateKeyRange.nextString();
   if (kt != _rsaKeyType) {

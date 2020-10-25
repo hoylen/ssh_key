@@ -83,7 +83,7 @@ void main(List<String> args) {
 - Only RSA keys are supported.
 
 - Requires Dart 2.7.0 or later, because it uses Dart _extension
-  methods_ to make the _encode_ method to available on the Pointy
+  methods_ to make the _encode_ method available on the Pointy
   Castle public and private key classes.
 
 - Private key support is experimental and only supports private keys
@@ -104,6 +104,9 @@ documentation about the format (since they are often proprietary).
 Support for other types of keys is limited by the implementation of
 other cryptographic algorithms in Dart._
 
+**Future changes: v0.5.x might be the final releases to use the Pointy
+Castle package. Switching to a different cryptography package for
+future releases is being considered, so more algorithms can be supported.**
 
 ## Which library to use
 
