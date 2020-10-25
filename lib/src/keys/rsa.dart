@@ -49,7 +49,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
   /// Constructor from Pointy Castle RSAPublicKey.
 
   RSAPublicKeyWithInfo.fromRSAPublicKey(pointy_castle.RSAPublicKey pcKey)
-      : super(pcKey.modulus, pcKey.e);
+      : super(pcKey.modulus, pcKey.publicExponent);
 
   //================================================================
   // Methods
@@ -313,6 +313,11 @@ RSAPublicKeyWithInfo _rsaFromPkcs1(Pkcs1RsaPublicKey pkcs1) {
 }
 
 //################################################################
+/*
+This is no longer required with Pointy Castle 2.0.0, which added its
+own publicExponent. Though the `RSAPrivateKey` constructor must be
+explicitly passed the value of the public exponent.
+
 /// Extension on the Pointy Castle `RSAPrivateKey` class.
 ///
 /// This extension defines a [publicExponent] getter, as a convenient way
@@ -323,13 +328,13 @@ extension RSAPrivateKeyExt on pointy_castle.RSAPrivateKey {
   ///
   /// The Pointy Castle `RSAPrivateKey` class does not contain the public
   /// exponent available, but it can be calculated. This getter calculates
-  /// it from the values in the RSA private key.
 
   BigInt get publicExponent {
     final phi = (p - BigInt.one) * (q - BigInt.one);
     return d.modInverse((phi));
   }
 }
+*/
 
 //################################################################
 /// An RSA private key with additional information.
@@ -342,9 +347,6 @@ extension RSAPrivateKeyExt on pointy_castle.RSAPrivateKey {
 /// normally programs can just invoke the `encode` method (defined by the
 /// [PrivateKeyExt] extension on the Pointy Castle `PublicKey`), with a format
 /// parameter -- that will cause one of these formatting methods to be invoked.
-///
-/// In addition to the RSA parameters available from `RSAPrivateKey`, this
-/// class also makes available the [publicExponent] (d).
 
 class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     with PrivateKeyMixin {
@@ -359,7 +361,8 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
 
   RSAPrivateKeyWithInfo(
       BigInt modulus, BigInt privateExponent, BigInt p, BigInt q)
-      : super(modulus, privateExponent, p, q) {
+      : super(modulus, privateExponent, p, q,
+            privateExponent.modInverse(((p - BigInt.one) * (q - BigInt.one)))) {
     if (p * q != modulus) {
       throw ArgumentError.value(modulus, 'modulus', 'inconsistent with p & q');
     }
@@ -368,8 +371,8 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
   //----------------------------------------------------------------
   /// Constructor from Pointy Castle RSAPrivateKey.
 
-  RSAPrivateKeyWithInfo.fromRSAPrivateKey(pointy_castle.RSAPrivateKey pcKey)
-      : super(pcKey.p * pcKey.q, pcKey.d, pcKey.p, pcKey.q);
+  RSAPrivateKeyWithInfo.fromRSAPrivateKey(pointy_castle.RSAPrivateKey pc)
+      : super(pc.p * pc.q, pc.privateExponent, pc.p, pc.q, pc.publicExponent);
 
   //================================================================
   // Methods
@@ -421,7 +424,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
       BinaryLengthValue.fromString(_rsaKeyType),
       BinaryLengthValue.fromBigInt(modulus),
       BinaryLengthValue.fromBigInt(publicExponent),
-      BinaryLengthValue.fromBigInt(d), // private exponent
+      BinaryLengthValue.fromBigInt(privateExponent),
       BinaryLengthValue.fromBigInt(q.modInverse(p)), // IQMP
       BinaryLengthValue.fromBigInt(p),
       BinaryLengthValue.fromBigInt(q),
@@ -461,7 +464,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
         RSAPublicKeyWithInfo(modulus, publicExponent)._encodeAsChunks();
 
     final pvtBytes = BinaryLengthValue.encode([
-      BinaryLengthValue.fromBigInt(d), // private exponent
+      BinaryLengthValue.fromBigInt(privateExponent),
       BinaryLengthValue.fromBigInt(p),
       BinaryLengthValue.fromBigInt(q),
       BinaryLengthValue.fromBigInt(q.modInverse(p)), // IQMP
@@ -564,7 +567,7 @@ RSAPrivateKeyWithInfo _rsaPrivateFromOpenSSH(
   // The public key part can be discarded, since it has the same numbers that is
   // in the private key part.
 
-  if (pub.modulus != modulus || pub.e != publicExponent) {
+  if (pub.modulus != modulus || pub.publicExponent != publicExponent) {
     throw KeyBad('inconsistent: public and private keys');
   }
 

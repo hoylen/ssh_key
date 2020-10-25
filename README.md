@@ -63,7 +63,7 @@ void main(List<String> args) {
     stderr.write('''RSA public key:
   fingerprint: ${pubKey.fingerprint()}
   modulus: ${pubKey.n}
-  public exponent: ${pubKey.e}
+  public exponent: ${pubKey.publicExponent}
 ''');
     // The modulus and public exponent (n and e) are available,
     // because the RSAPublicKeyWithInfo is a subclass of the

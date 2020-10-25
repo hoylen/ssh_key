@@ -412,13 +412,13 @@ void checkValuesPrivate(RSAPrivateKeyWithInfo rsaPvt,
     {String expComment = expectedComment}) {
   expect(rsaPvt.modulus.bitLength, equals(2048));
   expect(rsaPvt.publicExponent.bitLength, equals(17));
-  expect(rsaPvt.d.bitLength, equals(2048));
+  expect(rsaPvt.privateExponent.bitLength, equals(2048));
   expect(rsaPvt.p.bitLength, equals(1024));
   expect(rsaPvt.q.bitLength, equals(1024));
 
   expect(rsaPvt.modulus, equals(expectedModulus));
   expect(rsaPvt.publicExponent, equals(expectedPublicExponent));
-  expect(rsaPvt.d, equals(expectedPrivateExponent));
+  expect(rsaPvt.privateExponent, equals(expectedPrivateExponent));
   expect(rsaPvt.p, equals(expectedP));
   expect(rsaPvt.q, equals(expectedQ));
 
@@ -428,7 +428,7 @@ void checkValuesPrivate(RSAPrivateKeyWithInfo rsaPvt,
 
   final x = BigInt.from(42); // check decrypt(encrypt(x)) == x
   final cipher = x.modPow(rsaPvt.publicExponent, rsaPvt.modulus);
-  expect(cipher.modPow(rsaPvt.d, rsaPvt.modulus), equals(x),
+  expect(cipher.modPow(rsaPvt.privateExponent, rsaPvt.modulus), equals(x),
       reason: 'RSA values are incorrect');
 
   // Comment matches expected value (or is absent as expected)
@@ -965,7 +965,7 @@ void groupPrivateEncode() {
 
       expect(reconRsa.modulus, equals(sourceRsa.modulus));
       expect(reconRsa.publicExponent, equals(sourceRsa.publicExponent));
-      expect(reconRsa.d, equals(sourceRsa.d)); // private exponent
+      expect(reconRsa.privateExponent, equals(sourceRsa.privateExponent));
       expect(reconRsa.p, equals(sourceRsa.p));
       expect(reconRsa.q, equals(sourceRsa.q));
       // TODO expect(reconRsa.comment, equals(sourceRsa.comment));

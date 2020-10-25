@@ -195,7 +195,7 @@ void groupParse4096() {
 
       expect(rsaPvt.modulus, equals(expectedModulus));
       expect(rsaPvt.publicExponent, equals(expectedPublicExponent));
-      expect(rsaPvt.d, equals(expectedPrivateExponent));
+      expect(rsaPvt.privateExponent, equals(expectedPrivateExponent));
       expect(rsaPvt.p, equals(expectedP));
       expect(rsaPvt.q, equals(expectedQ));
 
