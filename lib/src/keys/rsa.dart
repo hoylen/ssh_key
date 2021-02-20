@@ -361,8 +361,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
 
   RSAPrivateKeyWithInfo(
       BigInt modulus, BigInt privateExponent, BigInt p, BigInt q)
-      : super(modulus, privateExponent, p, q,
-            privateExponent.modInverse(((p - BigInt.one) * (q - BigInt.one)))) {
+      : super(modulus, privateExponent, p, q) {
     if (p * q != modulus) {
       throw ArgumentError.value(modulus, 'modulus', 'inconsistent with p & q');
     }
@@ -372,7 +371,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
   /// Constructor from Pointy Castle RSAPrivateKey.
 
   RSAPrivateKeyWithInfo.fromRSAPrivateKey(pointy_castle.RSAPrivateKey pc)
-      : super(pc.p * pc.q, pc.privateExponent, pc.p, pc.q, pc.publicExponent);
+      : super(pc.p * pc.q, pc.privateExponent, pc.p, pc.q);
 
   //================================================================
   // Methods
@@ -636,3 +635,23 @@ RSAPrivateKeyWithInfo _rsaPrivateFromPPK(
     ..comment = comment
     .._source = source;
 }
+
+// A RSA Private Key syntax is defined by:
+// https://tools.ietf.org/html/rfc8017#page-54
+//
+//          RSAPrivateKey ::= SEQUENCE {
+//              version           Version,
+//              modulus           INTEGER,  -- n
+//              publicExponent    INTEGER,  -- e
+//              privateExponent   INTEGER,  -- d
+//              prime1            INTEGER,  -- p
+//              prime2            INTEGER,  -- q
+//              exponent1         INTEGER,  -- d mod (p-1)
+//              exponent2         INTEGER,  -- d mod (q-1)
+//              coefficient       INTEGER,  -- (inverse of q) mod p
+//              otherPrimeInfos   OtherPrimeInfos OPTIONAL
+//          }
+// But is it used by SSH?
+//
+// There is also:
+// https://tools.ietf.org/html/rfc5208

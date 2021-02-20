@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- Updated dependency on pointycastle to v2.0.1.
+
 ## 0.6.0
 
 - Updated dependency on pointycastle to v2.0.0.

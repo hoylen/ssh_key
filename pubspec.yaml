@@ -1,5 +1,5 @@
 name: ssh_key
-version: 0.6.0
+version: 0.6.1
 description: Encodes and decodes keys to/from different text file formats.
 homepage: https://github.com/hoylen/ssh_key
 
@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   asn1lib: '^0.8.1'
-  pointycastle: '^2.0.0'
+  pointycastle: '^2.0.1'
   tuple: '^1.0.3'
 
 dev_dependencies:

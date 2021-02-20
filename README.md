@@ -104,7 +104,7 @@ documentation about the format (since they are often proprietary).
 Support for other types of keys is limited by the implementation of
 other cryptographic algorithms in Dart._
 
-**Future changes: v0.5.x might be the final releases to use the Pointy
+**Future changes: v0.6.x might be the final releases to use the Pointy
 Castle package. Switching to a different cryptography package for
 future releases is being considered, so more algorithms can be supported.**
 
