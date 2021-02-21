@@ -9,7 +9,7 @@ class _EncodedPuttyPrivateParts {
   String keyType;
   Uint8List publicBytes;
   Uint8List privateBytes;
-  String comment;
+  String? comment;
 }
 
 //################################################################
@@ -24,7 +24,7 @@ mixin PrivateKeyMixin {
   //================================================================
   // Members
 
-  PvtTextSource _source;
+  PvtTextSource? _source;
 
   //----------------------------------------------------------------
   /// Comment associated with the private key.
@@ -37,7 +37,7 @@ mixin PrivateKeyMixin {
   /// If the private key is encoded into text, this comment will be encoded into
   /// the text if the format supports comments.
 
-  String comment;
+  String? comment;
 
   // Note: unlike public keys, private keys do not support arbitrary properties,
   // because none of the private key formats support anything other than a
@@ -51,7 +51,7 @@ mixin PrivateKeyMixin {
   ///
   /// Null if the private key was not decoded from any text.
 
-  PvtTextSource get source => _source;
+  PvtTextSource? get source => _source;
 
   //  Uint8List dummyPrefix;
 }
@@ -87,7 +87,7 @@ extension PrivateKeyExt on pointy_castle.PrivateKey {
 /// included in the encoded text.
 
 String _privateKeyEncode(pointy_castle.PrivateKey pvtKey, PvtKeyEncoding format,
-    {String passphrase}) {
+    {String passphrase = ''}) {
   if (pvtKey is RSAPrivateKeyWithInfo) {
     // ssh_key RSAPrivateKeyWithInfo
 
@@ -97,7 +97,6 @@ String _privateKeyEncode(pointy_castle.PrivateKey pvtKey, PvtKeyEncoding format,
       case PvtKeyEncoding.puttyPrivateKey:
         return pvtKey.encodePuttyPrivateKey(passphrase);
     }
-    throw StateError('privateKeyEncode: format=$format');
   } else if (pvtKey is pointy_castle.RSAPrivateKey) {
     // Pointy Castle RSAPrivateKey: upgrade it and encode that
 
@@ -139,8 +138,8 @@ String _privateKeyEncode(pointy_castle.PrivateKey pvtKey, PvtKeyEncoding format,
 /// A [KeyUnsupported] is thrown if the type of private key is not supported.
 
 pointy_castle.PrivateKey privateKeyDecode(String str,
-    {int offset, bool allowPreamble = false, String passphrase}) {
-  var p = offset ?? 0;
+    {int offset = 0, bool allowPreamble = false, String passphrase = ''}) {
+  var p = offset;
 
   // Skip leading whitespace
 
@@ -176,41 +175,34 @@ pointy_castle.PrivateKey privateKeyDecode(String str,
     final block =
         TextualEncoding.decode(str, offset: p, allowPreamble: allowPreamble);
 
-    if (block != null) {
-      if (block.label == 'OPENSSH PRIVATE KEY') {
-        // OpenSSH Private Key (i.e. the new OpenSSH format)
-        // Data is ... TODO
+    if (block.label == 'OPENSSH PRIVATE KEY') {
+      // OpenSSH Private Key (i.e. the new OpenSSH format)
+      // Data is ... TODO
 
-        final ospk = OpenSshPrivateKey.decode(block.data,
-            source: PvtTextSource.setEncoding(
-                block.source, PvtKeyEncoding.openSsh));
-        // TODO: use private key format!!!
+      final ospk = OpenSshPrivateKey.decode(block.data,
+          source:
+              PvtTextSource.setEncoding(block.source!, PvtKeyEncoding.openSsh));
+      // TODO: use private key format!!!
 
-        switch (ospk.privateKeyType) {
-          case 'ssh-rsa':
-            return _rsaPrivateFromOpenSSH(
-                ospk.publicKeyBytes, ospk.privateKeyBytes, ospk.source);
-            break;
+      switch (ospk.privateKeyType) {
+        case 'ssh-rsa':
+          return _rsaPrivateFromOpenSSH(
+              ospk.publicKeyBytes, ospk.privateKeyBytes, ospk.source);
 
-          default:
-            throw KeyUnsupported(
-                'unsupported algorithm: ${ospk.privateKeyType}');
-        }
-      } else if (block.label == 'RSA PRIVATE KEY') {
-        // PKCS #1 Private Key (i.e. the original OpenSSH format)
-
-        //print(_hexDump(block.data, name: 'PKCS #1 Private Key data'));
-        print('PKCS #1 data length: ${block.data.length}');
-
-        throw KeyUnsupported(
-            'Decoding PKCS #1 Private Key not implemented yet');
-      } else {
-        throw KeyUnsupported('unsupported label: ${block.label}');
+        default:
+          throw KeyUnsupported('unsupported algorithm: ${ospk.privateKeyType}');
       }
+    } else if (block.label == 'RSA PRIVATE KEY') {
+      // PKCS #1 Private Key (i.e. the original OpenSSH format)
+
+      //print(_hexDump(block.data, name: 'PKCS #1 Private Key data'));
+      print('PKCS #1 data length: ${block.data.length}');
+
+      throw KeyUnsupported('Decoding PKCS #1 Private Key not implemented yet');
+    } else {
+      throw KeyUnsupported('unsupported label: ${block.label}');
     }
   }
-
-  throw KeyMissing('no key found');
 }
 
 // https://coolaj86.com/articles/the-openssh-private-key-format/

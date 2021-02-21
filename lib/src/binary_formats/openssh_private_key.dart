@@ -27,7 +27,7 @@ class OpenSshPrivateKey implements BinaryFormat {
   //----------------------------------------------------------------
   /// Decode from a sequence of bytes.
 
-  OpenSshPrivateKey.decode(Uint8List bytes, {this.source}) {
+  factory OpenSshPrivateKey.decode(Uint8List bytes, {PvtTextSource? source}) {
     var p = 0;
 
     // Extract null-terminated magic string
@@ -74,16 +74,14 @@ class OpenSshPrivateKey implements BinaryFormat {
 
     final br = BinaryRange(bytes, begin: p);
 
-    cipherName = br.nextString();
-    kdfName = br.nextString();
+    final cipherName = br.nextString();
+    final kdfName = br.nextString();
 
     final kdfRange = br.nextBinary();
-    if (kdfRange.isEmpty) {
-      kdf = null;
-    } else {
-      kdf = kdfRange.nextRawBytes(kdfRange.end - kdfRange.begin);
-      assert(kdfRange.isEmpty);
-    }
+    final kdf = (kdfRange.isEmpty)
+        ? Uint8List(0)
+        : kdfRange.nextRawBytes(kdfRange.end - kdfRange.begin);
+    assert(kdfRange.isEmpty);
 
     final numberOfKeys = br.nextUint32();
     if (numberOfKeys != 1) {
@@ -100,12 +98,15 @@ class OpenSshPrivateKey implements BinaryFormat {
 
     // Save the bytes making up the public and private keys
 
-    publicKeyBytes = publicKeyRange.allRawBytes();
-    privateKeyBytes = privateKeyRange.allRawBytes();
+    final publicKeyBytes = publicKeyRange.allRawBytes();
+    final privateKeyBytes = privateKeyRange.allRawBytes();
 
     if (privateKeyBytes.length % 8 != 0) {
       throw KeyBad('private key part is not padded correctly');
     }
+
+    return OpenSshPrivateKey(
+        cipherName, kdfName, kdf, publicKeyBytes, privateKeyBytes, source);
   }
 
   //================================================================
@@ -133,7 +134,10 @@ class OpenSshPrivateKey implements BinaryFormat {
   Uint8List privateKeyBytes;
 
   /// Text source from where the private key was decoded from
-  final PvtTextSource source;
+  ///
+  /// Only non-null if the private key was decoded from text.
+
+  final PvtTextSource? source;
 
   //================================================================
   // Methods

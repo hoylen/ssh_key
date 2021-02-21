@@ -1,7 +1,7 @@
 part of ssh_key_txt;
 
 //################################################################
-/// Base class for all text encodings.
+/// Base class for all public key text encodings.
 
 // ignore: one_member_abstracts
 abstract class PubTextEncoding {
@@ -10,7 +10,7 @@ abstract class PubTextEncoding {
 }
 
 //################################################################
-/// Base class for all text encodings that can be encrypted
+/// Base class for all text encodings that can be encrypted.
 
 // ignore: one_member_abstracts
 abstract class PvtTextEncoding {

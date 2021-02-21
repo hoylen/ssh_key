@@ -33,7 +33,11 @@ class CommandLine {
   //================================================================
   // Constructors
 
-  CommandLine(List<String> args) {
+  //----------------------------------------------------------------
+
+  factory CommandLine(List<String> args) {
+    var verbose = false;
+
     final parser = ArgParser(allowTrailingOptions: true)
       ..addOption('format',
           abbr: 'f', help: 'output format', defaultsTo: defaultFormat)
@@ -50,7 +54,7 @@ class CommandLine {
     // Help flag
 
     {
-      final Object help = results['help'];
+      final dynamic help = results['help'];
       if (help is bool && help != false) {
         print('''Usage: $prog [options] inputKeyFile
 ${parser.usage}
@@ -62,32 +66,34 @@ $_programName $_version''');
     }
 
     {
-      final Object v = results['verbose'];
+      final dynamic v = results['verbose'];
       verbose = (v is bool && v != false);
     }
 
     final dynamic formatStr = results['format'].toLowerCase();
-    outputFormat = formats[formatStr];
+    final outputFormat = formats[formatStr];
     if (outputFormat == null) {
       stderr.write('$prog: unknown format: $formatStr (see --help)\n');
       exit(2);
     }
 
-    switch (results.rest.length) {
-      case 0:
+    if (results.rest.length != 1) {
+      if (results.rest.isEmpty) {
         stderr.write('$prog: missing input filename\n');
-        exit(2);
-        break;
-
-      case 1:
-        inputFilename = results.rest[0];
-        break;
-
-      default:
+      } else {
         stderr.write('$prog: too many arguments\n');
-        exit(2);
+      }
+      exit(2);
     }
+    final inputFilename = results.rest.first;
+
+    return CommandLine._internal(inputFilename, outputFormat, verbose);
   }
+
+  //----------------------------------------------------------------
+  /// Internal constructor that sets all the final members.
+
+  CommandLine._internal(this.inputFilename, this.outputFormat, this.verbose);
 
   //================================================================
   // Constants
@@ -112,16 +118,17 @@ $_programName $_version''');
     'x509spki': ssh_key.PubKeyEncoding.x509spki,
     'pkcs8': ssh_key.PubKeyEncoding.x509spki,
   };
+
   static const defaultFormat = 'sshpublickey';
 
   //================================================================
   // Members
 
-  String inputFilename;
+  final String inputFilename;
 
-  ssh_key.PubKeyEncoding outputFormat;
+  final ssh_key.PubKeyEncoding outputFormat;
 
-  bool verbose;
+  final bool verbose;
 }
 
 //################################################################
@@ -137,7 +144,8 @@ void main(List<String> args) {
 
     if (options.verbose) {
       if (key is ssh_key.RSAPublicKeyWithInfo) {
-        stderr.write('Input format: ${key.source.encoding}\n');
+        // key.source is always not null, because key was decoded from bytes
+        stderr.write('Input format: ${key.source!.encoding}\n');
       }
 
       stderr.write('\nOutput format: ${options.outputFormat}\n');

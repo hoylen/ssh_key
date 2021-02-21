@@ -12,7 +12,7 @@ mixin PublicKeyMixin {
   //================================================================
   // Members
 
-  PubTextSource _source;
+  late PubTextSource? _source;
 
   //----------------------------------------------------------------
   /// Properties associated with the public key.
@@ -25,7 +25,7 @@ mixin PublicKeyMixin {
   /// format fully supports properties. The other formats either only support
   /// at most one comment, or no properties at all.
 
-  Properties properties = Properties();
+  final properties = Properties();
 
   //================================================================
   // Methods
@@ -35,7 +35,7 @@ mixin PublicKeyMixin {
   ///
   /// Null if the public key was not decoded from any text.
 
-  PubTextSource get source => _source;
+  PubTextSource? get source => _source;
 }
 
 //################################################################
@@ -78,7 +78,6 @@ String _publicKeyEncode(
       case PubKeyEncoding.x509spki:
         return pcPubKey.encodeX509spki();
     }
-    throw StateError('publicKeyEncode: format=$format');
   } else if (pcPubKey is pointy_castle.RSAPublicKey) {
     return _publicKeyEncode(
         RSAPublicKeyWithInfo.fromRSAPublicKey(pcPubKey), format);
@@ -131,8 +130,11 @@ String _publicKeyEncode(
 /// the string use the [publicKeyDecodeAll] method.
 
 pointy_castle.PublicKey publicKeyDecode(String str,
-    {int offset, bool allowPreamble = false}) {
-  var p = offset ?? 0;
+    {int offset = 0, bool allowPreamble = false}) {
+  if (offset < 0) {
+    throw ArgumentError.value(offset, 'offset', 'is negative');
+  }
+  var p = offset;
 
   // Skip leading whitespace
 
@@ -151,13 +153,13 @@ pointy_castle.PublicKey publicKeyDecode(String str,
     // Assume it is OpenSSH format
 
     final openSsh = OpenSshPublicKey.decode(str, offset: p);
-    assert(openSsh != null);
 
     // The comment (if any) is included as a header
     final headers = <SshPublicKeyHeader>[];
-    if (openSsh.comment != null) {
-      headers.add(
-          SshPublicKeyHeader(SshPublicKeyHeader.commentTag, openSsh.comment));
+
+    final c = openSsh.comment;
+    if (c != null) {
+      headers.add(SshPublicKeyHeader(SshPublicKeyHeader.commentTag, c));
     }
 
     return _keyFromOpenSshChunksAndHeaders(
@@ -175,7 +177,6 @@ pointy_castle.PublicKey publicKeyDecode(String str,
       // Assume it is the SSH Public Key File Format (RFC 4716)
       final spk =
           SshPublicKey.decode(str, offset: p, allowPreamble: allowPreamble);
-      assert(spk != null);
 
       return _keyFromOpenSshChunksAndHeaders(
           spk.bytes, spk.headers, spk.source);
@@ -186,36 +187,34 @@ pointy_castle.PublicKey publicKeyDecode(String str,
     final block =
         TextualEncoding.decode(str, offset: p, allowPreamble: allowPreamble);
 
-    if (block != null) {
-      if (block.label == 'RSA PUBLIC KEY') {
-        // Data is PKCS #1 (which always an RSA public key)
+    if (block.label == 'RSA PUBLIC KEY') {
+      // Data is PKCS #1 (which always an RSA public key)
 
-        final pkcs1 = Pkcs1RsaPublicKey.decode(block.data,
-            PubTextSource.setEncoding(block.source, PubKeyEncoding.pkcs1));
+      final pkcs1 = Pkcs1RsaPublicKey.decode(block.data,
+          PubTextSource.setEncoding(block.source!, PubKeyEncoding.pkcs1));
+
+      return _rsaFromPkcs1(pkcs1);
+    } else if (block.label == 'PUBLIC KEY') {
+      // Data is subjectPublicKeyInfo
+
+      final spki = SubjectPublicKeyInfo.decode(block.data,
+          source: PubTextSource.setEncoding(
+              block.source!, PubKeyEncoding.x509spki));
+
+      if (spki.algorithmOid == _rsaAlgorithmOid) {
+        // RSA public key
+
+        assert(spki.algorithmParameters.length == 1 &&
+            spki.algorithmParameters.first is ASN1Null);
+
+        final pkcs1 = Pkcs1RsaPublicKey.decode(spki.data, spki.source);
 
         return _rsaFromPkcs1(pkcs1);
-      } else if (block.label == 'PUBLIC KEY') {
-        // Data is subjectPublicKeyInfo
-
-        final spki = SubjectPublicKeyInfo.decode(block.data,
-            source: PubTextSource.setEncoding(
-                block.source, PubKeyEncoding.x509spki));
-
-        if (spki.algorithmOid == _rsaAlgorithmOid) {
-          // RSA public key
-
-          assert(spki.algorithmParameters.length == 1 &&
-              spki.algorithmParameters.first is ASN1Null);
-
-          final pkcs1 = Pkcs1RsaPublicKey.decode(spki.data, spki.source);
-
-          return _rsaFromPkcs1(pkcs1);
-        } else {
-          throw KeyUnsupported('unsupported algorithm: ${spki.algorithmOid}');
-        }
       } else {
-        throw KeyUnsupported('unsupported label: ${block.label}');
+        throw KeyUnsupported('unsupported algorithm: ${spki.algorithmOid}');
       }
+    } else {
+      throw KeyUnsupported('unsupported label: ${block.label}');
     }
   }
 
@@ -228,7 +227,7 @@ pointy_castle.PublicKey publicKeyDecode(String str,
 ///
 
 pointy_castle.PublicKey _keyFromOpenSshChunksAndHeaders(Uint8List bytes,
-    Iterable<SshPublicKeyHeader> headers, PubTextSource source) {
+    Iterable<SshPublicKeyHeader> headers, PubTextSource? source) {
   RSAPublicKeyWithInfo result;
 
   final keyType = BinaryRange(bytes).nextString();
@@ -278,9 +277,12 @@ pointy_castle.PublicKey _keyFromOpenSshChunksAndHeaders(Uint8List bytes,
 /// keys are found in the string. Each invocation starts parsing immediately
 /// after where the previous public key was found.
 
-List<pointy_castle.PublicKey> publicKeyDecodeAll(String str, {int offset}) {
+List<pointy_castle.PublicKey> publicKeyDecodeAll(String str, {int offset = 0}) {
   final results = <pointy_castle.PublicKey>[];
 
+  if (offset < 0) {
+    throw ArgumentError.value(offset, 'offset', 'is negative');
+  }
   var pos = offset;
 
 // Keep trying to decode a text encoding until no more found
@@ -290,7 +292,7 @@ List<pointy_castle.PublicKey> publicKeyDecodeAll(String str, {int offset}) {
       final item = publicKeyDecode(str, offset: pos);
       results.add(item);
       if (item is RSAPublicKeyWithInfo) {
-        pos = item.source.end + 1;
+        pos = item.source!.end + 1;
       } else {
         throw StateError('publicKeyDecode returned unexpected type');
       }

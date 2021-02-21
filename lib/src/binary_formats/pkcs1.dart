@@ -54,13 +54,15 @@ class Pkcs1RsaPublicKey implements BinaryFormat {
         final n = topSequence.elements[0];
         final e = topSequence.elements[1];
         if (n is ASN1Integer && e is ASN1Integer) {
-          modulus = n.valueAsBigInteger;
-          exponent = e.valueAsBigInteger;
+          // Success
+
+          modulus = n.valueAsBigInteger!;
+          exponent = e.valueAsBigInteger!;
+          return; // success
+
         } else {
           throw KeyBad('n and/or e are not ASN.1 Integers');
         }
-
-        return; // success
       } else {
         throw _Pkcs1Msg('DER is not a sequence');
       }
@@ -78,18 +80,18 @@ class Pkcs1RsaPublicKey implements BinaryFormat {
 
   /// RSA modulus
 
-  BigInt modulus;
+  late BigInt modulus;
 
   /// RSA exponent
 
-  BigInt exponent;
+  late BigInt exponent;
 
   /// Source this was decoded from.
   ///
   /// Will always be set if this was created by the
   /// [Pkcs1RsaPublicKey.decode] constructor, but otherwise could be null.
 
-  PubTextSource source;
+  final PubTextSource? source;
 
   //================================================================
   // Methods

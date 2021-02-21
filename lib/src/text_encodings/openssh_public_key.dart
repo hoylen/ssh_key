@@ -67,17 +67,14 @@ class OpenSshPublicKey implements PubTextEncoding {
   /// Throws a FormatException if the string does not contain correctly encoded
   /// value. Any whitespace at the start of the string is skipped.
 
-  OpenSshPublicKey.decode(String str, {int offset}) {
+  OpenSshPublicKey.decode(String str, {int offset = 0}) {
     // Skip the key type
 
-    if (str == null) {
-      throw KeyMissing('OpenSSH Public Key: string is null');
-    }
     if (str.isEmpty) {
       throw KeyMissing('OpenSSH Public Key: string is empty');
     }
 
-    var p = offset ?? 0;
+    var p = offset;
 
     // Skip leading whitespace and blank lines
 
@@ -91,7 +88,7 @@ class OpenSshPublicKey implements PubTextEncoding {
     }
 
     final keyTypeStart = p;
-    int algorithmNameEnd;
+    int? algorithmNameEnd;
 
     while (p < str.length) {
       final ch = str[p];
@@ -199,13 +196,13 @@ class OpenSshPublicKey implements PubTextEncoding {
 
   /// Binary data representing the public key.
 
-  Uint8List data;
+  late Uint8List data;
 
   /// Comment
   ///
   /// Null if there is no comment.
 
-  String comment;
+  String? comment;
 
   /// Source text the OpenSSH public key was parsed from.
   ///
@@ -214,7 +211,7 @@ class OpenSshPublicKey implements PubTextEncoding {
   ///
   /// Null if it wasn't parsed from text.
 
-  PubTextSource source;
+  PubTextSource? source;
 
   //================================================================
 
@@ -238,7 +235,7 @@ class OpenSshPublicKey implements PubTextEncoding {
     if (comment != null) {
       // There is a comment.
       // Note: all spaces in the comment are preserved.
-      var s = comment;
+      var s = comment!;
       s = s.replaceAll('\r', ' '); // disallow multi-line comments
       s = s.replaceAll('\n', ' ');
 

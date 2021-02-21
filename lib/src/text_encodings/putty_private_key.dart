@@ -42,11 +42,16 @@ class PuttyPrivateKey implements PvtTextEncoding {
   //----------------------------------------------------------------
   /// Default constructor
   ///
+  /// Create a Putty Private Key object. This is usually used when the program
+  /// has a public-key pair and wants to export it in the PPK format.
+  /// Use this constructor to create the object and then invoke [encode] on it.
+  ///
   /// An optional [comment] can be provided.
 
   PuttyPrivateKey(
       this.keyType, this.encryption, this.publicKeyBytes, this.privateKeyBytes,
-      [this.comment, this.source]);
+      [this.comment])
+      : source = null;
 
   //----------------------------------------------------------------
   /// Decode from text
@@ -54,22 +59,30 @@ class PuttyPrivateKey implements PvtTextEncoding {
   /// Throws a FormatException if the string does not contain correctly encoded
   /// value. Any whitespace at the start of the string is skipped.
 
-  PuttyPrivateKey.decode(String str, {int offset}) {
+  PuttyPrivateKey.decode(String str, {int offset = 0}) {
     // The Putty Private Key format is documented in "sshpubk.c" from the
     // Putty source code.
 
-    source = PvtTextSource(
-        str, offset ?? 0, str.length, PvtKeyEncoding.puttyPrivateKey);
+    if (offset < 0) {
+      throw ArgumentError.value(offset, 'offset', 'is negative');
+    }
+
+    source =
+        PvtTextSource(str, offset, str.length, PvtKeyEncoding.puttyPrivateKey);
 
     // Split into lines
 
-    final actualStr = (source.begin == 0) ? str : str.substring(offset);
+    final actualStr = (source!.begin == 0) ? str : str.substring(offset);
     final lines = const LineSplitter().convert(actualStr);
 
     // Parse the lines. Although the PPK format defines a strict order for
     // the lines, this parser will accept the lines in any order.
 
-    String privateMAC;
+    String? _privateMAC;
+    String? _keyType;
+    String? _encryption;
+    Uint8List? _publicKeyBytes;
+    Uint8List? _privateKeyBytes;
 
     while (lines.isNotEmpty) {
       // Try to match a name: value line.
@@ -89,20 +102,20 @@ class PuttyPrivateKey implements PvtTextEncoding {
           throw KeyBad('PPK: invalid format: ${lines[0]}');
         }
       }
-      final name = a.group(1);
-      final value = a.group(2);
+      final name = a.group(1)!;
+      final value = a.group(2)!;
 
-      String numBase64Lines;
+      String? numBase64Lines;
 
       switch (name) {
         case puttyKeyTypeTag:
-          keyType = value;
+          _keyType = value;
           break;
         case 'Encryption':
           if (value != 'none' && value != 'aes256-cbc') {
             throw KeyUnsupported('PKK encryption: $value');
           }
-          encryption = value;
+          _encryption = value;
           break;
         case 'Comment':
           comment = value;
@@ -114,7 +127,7 @@ class PuttyPrivateKey implements PvtTextEncoding {
           numBase64Lines = value;
           break;
         case 'Private-MAC':
-          privateMAC = value;
+          _privateMAC = value;
           break;
         default:
           throw KeyBad('PPK tag unknown: $name');
@@ -147,57 +160,63 @@ class PuttyPrivateKey implements PvtTextEncoding {
 
         final data = base64.decode(buf.toString());
         if (name == 'Public-Lines') {
-          publicKeyBytes = data;
+          _publicKeyBytes = data;
         } else if (name == 'Private-Lines') {
-          privateKeyBytes = data;
+          _privateKeyBytes = data;
         } else {
           assert(false);
         }
       }
     }
 
-    if (keyType == null) {
+    if (_keyType == null) {
       throw KeyBad('PPK: missing standard tag');
     }
-    if (keyType != 'ssh-rsa') {
-      throw KeyUnsupported('PPK key type: $keyType');
+    if (_keyType != 'ssh-rsa') {
+      throw KeyUnsupported('PPK key type: $_keyType');
     }
+    keyType = _keyType;
 
-    if (encryption == null) {
+    if (_encryption == null) {
       throw KeyBad('PKK: missing encryption tag');
     }
+    encryption = _encryption;
 
-    if (comment == null) {
+    if (comment != null) {
+      if (comment!.isEmpty) {
+        // Comment is always present in PPK, even when its value is an empty
+        // string. This implementation represents an emtpy comment with null,
+        // so if it is translated to other formats (where the comment is optional)
+        // empty comments will be omitted.
+        comment = null;
+      }
+    } else {
       throw KeyBad('PPK: missing comment tag');
     }
-    if (comment.isEmpty) {
-      // Comment is always present in PPK, even when its value is an empty
-      // string. This implementation represents an emtpy comment with null,
-      // so if it is translated to other formats (where the comment is optional)
-      // empty comments will be omitted.
-      comment = null;
-    }
 
-    if (publicKeyBytes == null) {
+    if (_publicKeyBytes != null) {
+      publicKeyBytes = _publicKeyBytes;
+    } else {
       throw KeyBad('PPK: missing Public-Lines');
     }
-    if (privateKeyBytes == null) {
+
+    if (_privateKeyBytes != null) {
+      privateKeyBytes = _privateKeyBytes;
+    } else {
       throw KeyBad('PPK: missing Private-Lines');
     }
 
     // Check the MAC
 
-    if (privateMAC == null) {
+    if (_privateMAC == null) {
       throw KeyBad('PPK: missing Private-MAC');
     }
 
     final passphrase = ''; // TODO
     final calculatedMac = _calculatePrivateMAC(keyType, passphrase);
 
-    if (privateMAC != calculatedMac) {
-      print('Private-MAC does not match:');
-      print('  read value: $privateMAC');
-      print('  calculated: $calculatedMac');
+    if (_privateMAC != calculatedMac) {
+      // print('Private-MAC: read="$_privateMAC" calculated="$calculatedMac"');
       throw KeyBad('PPK: key tampered with: Private-MAC does not match');
     }
   }
@@ -215,25 +234,32 @@ class PuttyPrivateKey implements PvtTextEncoding {
   // Members
 
   /// Key-type
-  String keyType;
+  late String keyType;
 
   /// Encryption method
-  String encryption;
+  late String encryption;
 
   /// Comment
-  String comment;
+  late String? comment;
 
   /// Bytes in the public key lines
-  Uint8List publicKeyBytes;
+  late Uint8List publicKeyBytes;
 
   /// Bytes in the private key lines
-  Uint8List privateKeyBytes;
+  late Uint8List privateKeyBytes;
 
   /// Source text this PKK was decoded from
-  PvtTextSource source;
+  late PvtTextSource? source;
 
   //================================================================
   // Methods
+
+  //----------------------------------------------------------------
+  /// Calculate the Private-Mac.
+  ///
+  /// This is used to calculate the Private-Mac, so its value can be compared
+  /// to the read value when decoding. It is also used to to calculate its
+  /// value when encoding.
 
   String _calculatePrivateMAC(String algorithm, String passphrase) {
     // The "Private-MAC" value is the hex representation of a HMAC-SHA-1 of
@@ -256,7 +282,7 @@ class PuttyPrivateKey implements PvtTextEncoding {
     //
     // (An empty passphrase is used for unencrypted keys.)
 
-    final k = 'putty-private-key-file-mac-key${passphrase ?? ''}';
+    final k = 'putty-private-key-file-mac-key$passphrase';
     final macKey =
         pointy_castle.SHA1Digest().process(Uint8List.fromList(utf8.encode(k)));
 

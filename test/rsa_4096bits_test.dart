@@ -189,9 +189,9 @@ void groupParse4096() {
       // ignore: avoid_as
       final rsaPvt = pvt as RSAPrivateKeyWithInfo;
 
-      expect(rsaPvt.source.begin, equals(0));
-      expect(rsaPvt.source.end, equals(openSshPrivate4096.length));
-      expect(rsaPvt.source.encoding, equals(PvtKeyEncoding.openSsh));
+      expect(rsaPvt.source!.begin, equals(0));
+      expect(rsaPvt.source!.end, equals(openSshPrivate4096.length));
+      expect(rsaPvt.source!.encoding, equals(PvtKeyEncoding.openSsh));
 
       expect(rsaPvt.modulus, equals(expectedModulus));
       expect(rsaPvt.publicExponent, equals(expectedPublicExponent));
@@ -216,13 +216,13 @@ RSAPublicKeyWithInfo testParsePublic(
   // ignore: avoid_as
   final rsaKey = k as RSAPublicKeyWithInfo;
 
-  expect(rsaKey.source.encoding, equals(PubKeyEncoding.openSsh));
+  expect(rsaKey.source!.encoding, equals(PubKeyEncoding.openSsh));
 
   expect(rsaKey.modulus, equals(modulus));
-  expect(rsaKey.modulus.bitLength, equals(bitLength));
+  expect(rsaKey.modulus!.bitLength, equals(bitLength));
   expect(rsaKey.exponent, equals(publicExponent));
   final comments = rsaKey.properties.values(SshPublicKeyHeader.commentTag);
-  expect(comments.length, equals(1));
+  expect(comments!.length, equals(1));
   expect(comments.first, equals('user@example.com'));
 
   return rsaKey;

@@ -283,17 +283,17 @@ SGVsbG8gV29ybGQ
       // ignore: avoid_as
       final rsaPubKey = k as RSAPublicKeyWithInfo;
 
-      expect(rsaPubKey.source.encoding, equals(PubKeyEncoding.sshPublicKey));
-      expect(rsaPubKey.source.begin, equals(0));
-      expect(rsaPubKey.source.end, equals(text.length));
+      expect(rsaPubKey.source!.encoding, equals(PubKeyEncoding.sshPublicKey));
+      expect(rsaPubKey.source!.begin, equals(0));
+      expect(rsaPubKey.source!.end, equals(text.length));
 
       final comments =
           rsaPubKey.properties.values(SshPublicKeyHeader.commentTag);
-      expect(comments.length, equals(1));
+      expect(comments!.length, equals(1));
       expect(comments.first, equals(expectedComment)); // quotes removed
 
       final xCommand = rsaPubKey.properties.values('X-Command');
-      expect(xCommand.length, equals(1));
+      expect(xCommand!.length, equals(1));
       expect(xCommand.first, equals('/home/me/bin/lock-in-guest.sh'));
 
       expect(rsaPubKey.exponent, equals(BigInt.from(35)));
@@ -417,9 +417,9 @@ soW6NUlfDzpvZK2H5E7eQaSeP3SAwGmQKUFHCddNaP0L+hM7zhFNzjFvpaMgJw0=
 
       final te = SshPublicKey.decode(text);
 
-      expect(te.source.begin, equals(0));
-      expect(te.source.end, equals(text.length));
-      expect(te.source.encoding, equals(PubKeyEncoding.sshPublicKey));
+      expect(te.source!.begin, equals(0));
+      expect(te.source!.end, equals(text.length));
+      expect(te.source!.encoding, equals(PubKeyEncoding.sshPublicKey));
 
       expect(te.headers.length, equals(2));
       expect(te.headers[0].tag, equals('Subject')); // case is preserved
@@ -441,16 +441,16 @@ soW6NUlfDzpvZK2H5E7eQaSeP3SAwGmQKUFHCddNaP0L+hM7zhFNzjFvpaMgJw0=
       // ignore: avoid_as
       final rsaPub = k as RSAPublicKeyWithInfo;
 
-      expect(rsaPub.source.begin, equals(0));
-      expect(rsaPub.source.end, equals(text.length));
-      expect(rsaPub.source.encoding, equals(PubKeyEncoding.sshPublicKey));
+      expect(rsaPub.source!.begin, equals(0));
+      expect(rsaPub.source!.end, equals(text.length));
+      expect(rsaPub.source!.encoding, equals(PubKeyEncoding.sshPublicKey));
 
       expect(rsaPub.properties.keys.length, equals(2));
       final comments = rsaPub.properties.values(SshPublicKeyHeader.commentTag);
-      expect(comments.length, equals(1));
+      expect(comments!.length, equals(1));
       expect(comments.first, equals(expectedComment));
       final subjects = rsaPub.properties.values('SUBJECT');
-      expect(subjects.length, equals(1));
+      expect(subjects!.length, equals(1));
       expect(subjects.first, equals('me'));
 
       expect(rsaPub.exponent, equals(BigInt.from(37)));

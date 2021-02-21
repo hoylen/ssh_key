@@ -41,7 +41,7 @@ class SshPublicKey implements PubTextEncoding {
   //----------------------------------------------------------------
   /// Default constructor.
 
-  SshPublicKey(this.headers, this.bytes, [this.source]);
+  SshPublicKey(this.headers, this.bytes) : source = null;
 
   //----------------------------------------------------------------
   /// Decode from text.
@@ -52,11 +52,13 @@ class SshPublicKey implements PubTextEncoding {
   /// identified by examining the [SshPublicKey.source] in the result
   /// and comparing it any _offset_ that was provided.
 
-  SshPublicKey.decode(String str, {int offset, bool allowPreamble = true}) {
+  SshPublicKey.decode(String str, {int offset = 0, bool allowPreamble = true}) {
     // Set starting offset
 
-    var p = offset ?? 0;
-    assert(0 <= p, 'negative offset');
+    if (offset < 0) {
+      throw ArgumentError.value(offset, 'offset', 'is negative');
+    }
+    var p = offset;
 
     // Skip whitespace
 
@@ -181,13 +183,17 @@ class SshPublicKey implements PubTextEncoding {
   /// Since the header-tags are case-insensitive. The lower-case values are
   /// stored in this list.
 
-  List<SshPublicKeyHeader> headers;
+  late List<SshPublicKeyHeader> headers;
 
   /// The decoded bytes
-  Uint8List bytes;
+  late Uint8List bytes;
 
   /// The text the key was decoded from
-  PubTextSource source;
+  ///
+  /// This is set if it was creatd by [SshPublicKey.decode]. Otherwise, it is
+  /// null.
+
+  late PubTextSource? source;
 
   //================================================================
   // Methods
@@ -359,7 +365,7 @@ class SshPublicKey implements PubTextEncoding {
 
     var p = start;
     var lineStart = p;
-    String prevChar;
+    var prevChar = '';
     while (p < content.length) {
       final ch = content[p];
       if (ch == '\r' || ch == '\n') {

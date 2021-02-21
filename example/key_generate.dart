@@ -30,28 +30,17 @@ const _programName = 'key_generate';
 
 const _version = '1.0.0';
 
+const defaultBitLength = 2048;
+
 //################################################################
 /// Secure random number generator to use when generating keys.
 
-/// Cached default secure random number generator.
-///
-/// This is set by [getSecureRandom].
-
-SecureRandom _defaultSecureRandom;
-
 //----------------------------------------------------------------
-/// Retrieves a secure random number generator.
-///
-/// The generator is cached for future use. If this is the first invocation,
-/// or [useNew] is true, a new generator is created and returned. Otherwise,
-/// the previously returned generator is returned.
+/// Creates a secure random number generator.
 
-SecureRandom getSecureRandom({bool useNew = false}) {
-  if (_defaultSecureRandom == null || useNew) {
-    // First invocation: set new secure random number generator as the default
-
+SecureRandom getSecureRandom() {
     // _defaultSecureRandom = FortunaRandom();
-    _defaultSecureRandom = SecureRandom('Fortuna');
+   final _defaultSecureRandom = SecureRandom('Fortuna');
 
     // Set a random seed
 
@@ -62,9 +51,8 @@ SecureRandom getSecureRandom({bool useNew = false}) {
     }
 
     _defaultSecureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
-  }
 
-  // Return the default
+  // Return it
 
   return _defaultSecureRandom;
 }
@@ -87,16 +75,15 @@ SecureRandom getSecureRandom({bool useNew = false}) {
 /// is the private key.
 
 AsymmetricKeyPair<PublicKey, PrivateKey> _generatePointyCastleImpl(
-    {int bitLength, SecureRandom secureRandom}) {
-  const defaultBitLength = 2048;
+    int bitLength, SecureRandom secureRandom) {
 
   // Use crypto library to generate keys
 
   final keyGenerator = KeyGenerator('RSA')
     ..init(ParametersWithRandom(
         RSAKeyGeneratorParameters(
-            BigInt.parse('65537'), bitLength ?? defaultBitLength, 64),
-        secureRandom ?? getSecureRandom()));
+            BigInt.parse('65537'), bitLength, 64),
+        secureRandom));
 
   return keyGenerator.generateKeyPair();
 }
@@ -107,10 +94,13 @@ class CommandLine {
   //================================================================
   // Constructors
 
-  CommandLine(List<String> args) {
+  //----------------------------------------------------------------
+
+  factory CommandLine(List<String> args) {
     final parser = ArgParser(allowTrailingOptions: true)
       ..addOption('bitlength',
-          abbr: 'b', help: 'bit length', defaultsTo: defaultBitLength)
+          abbr: 'b', help: 'bit length (default: $defaultBitLength)',
+          defaultsTo: '$defaultBitLength')
       ..addOption('format',
           abbr: 'f',
           help: 'output format for the public key',
@@ -124,7 +114,7 @@ class CommandLine {
     // Help flag
 
     {
-      final Object help = results['help'];
+      final dynamic help = results['help'];
       if (help is bool && help != false) {
         print('''Usage: $prog [options]
 ${parser.usage}
@@ -134,6 +124,10 @@ $_programName $_version''');
         exit(0);
       }
     }
+
+    // Bit length
+
+    var bitLength = defaultBitLength;
 
     try {
       final dynamic optArg = results['bitlength'];
@@ -151,11 +145,17 @@ $_programName $_version''');
       exit(2);
     }
 
+    // Output format
+
+    var outFormatPub = formats[defaultFormat]!;
+
     final dynamic optArg = results['format'];
     if (optArg is String) {
       final formatStr = optArg.toLowerCase();
-      outFormatPub = formats[formatStr];
-      if (outFormatPub == null) {
+      final fmt = formats[formatStr];
+      if (fmt != null) {
+        outFormatPub = fmt;
+      } else {
         stderr.write('$prog: unknown format: $formatStr (see --help)\n');
         exit(2);
       }
@@ -167,7 +167,13 @@ $_programName $_version''');
       stderr.write('$prog: too many arguments\n');
       exit(2);
     }
+
+    return CommandLine._internal(bitLength, outFormatPub);
   }
+
+  //----------------------------------------------------------------
+
+  CommandLine._internal(this.bitLength, this.outFormatPub);
 
   //================================================================
   // Constants
@@ -192,9 +198,8 @@ $_programName $_version''');
     'x509spki': ssh_key.PubKeyEncoding.x509spki,
     'pkcs8': ssh_key.PubKeyEncoding.x509spki,
   };
-  static const defaultFormat = 'sshpublickey';
 
-  static const defaultBitLength = '2048';
+  static const defaultFormat = 'sshpublickey';
 
   //================================================================
   // Members
@@ -210,7 +215,7 @@ void main(List<String> args) {
   final options = CommandLine(args);
 
   try {
-    final pair = _generatePointyCastleImpl(bitLength: options.bitLength);
+    final pair = _generatePointyCastleImpl(options.bitLength, getSecureRandom());
 
     // Print out the keys
 

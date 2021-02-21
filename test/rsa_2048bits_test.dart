@@ -382,9 +382,9 @@ wIZgDw9aTu6Q==
 /// Checks the RSA public values are correct.
 
 void checkValuesPublic(RSAPublicKeyWithInfo rsaPub,
-    {String expComment = expectedComment}) {
-  expect(rsaPub.modulus.bitLength, equals(2048));
-  expect(rsaPub.exponent.bitLength, equals(17));
+    {String? expComment = expectedComment}) {
+  expect(rsaPub.modulus!.bitLength, equals(2048));
+  expect(rsaPub.exponent!.bitLength, equals(17));
 
   expect(rsaPub.modulus, equals(expectedModulus));
   expect(rsaPub.exponent, equals(expectedPublicExponent));
@@ -394,7 +394,7 @@ void checkValuesPublic(RSAPublicKeyWithInfo rsaPub,
   final comments = rsaPub.properties.values(SshPublicKeyHeader.commentTag);
   if (expComment != null) {
     expect(comments, isNotNull, reason: 'expecting comment, none found');
-    expect(comments.length, equals(1), reason: 'too many comments found');
+    expect(comments!.length, equals(1), reason: 'too many comments found');
     expect(comments.first, equals(expComment));
   } else {
     expect(comments, isNull, reason: 'not expecting comment, but does exist');
@@ -409,12 +409,12 @@ void checkValuesPublic(RSAPublicKeyWithInfo rsaPub,
 /// Checks the RSA private (and public) values are correct.
 
 void checkValuesPrivate(RSAPrivateKeyWithInfo rsaPvt,
-    {String expComment = expectedComment}) {
-  expect(rsaPvt.modulus.bitLength, equals(2048));
-  expect(rsaPvt.publicExponent.bitLength, equals(17));
-  expect(rsaPvt.privateExponent.bitLength, equals(2048));
-  expect(rsaPvt.p.bitLength, equals(1024));
-  expect(rsaPvt.q.bitLength, equals(1024));
+    {String? expComment = expectedComment}) {
+  expect(rsaPvt.modulus!.bitLength, equals(2048));
+  expect(rsaPvt.publicExponent!.bitLength, equals(17));
+  expect(rsaPvt.privateExponent!.bitLength, equals(2048));
+  expect(rsaPvt.p!.bitLength, equals(1024));
+  expect(rsaPvt.q!.bitLength, equals(1024));
 
   expect(rsaPvt.modulus, equals(expectedModulus));
   expect(rsaPvt.publicExponent, equals(expectedPublicExponent));
@@ -424,11 +424,11 @@ void checkValuesPrivate(RSAPrivateKeyWithInfo rsaPvt,
 
   // RSA numbers have expected properties that make them an RSA key
 
-  expect(rsaPvt.p * rsaPvt.q, equals(rsaPvt.modulus));
+  expect(rsaPvt.p! * rsaPvt.q!, equals(rsaPvt.modulus));
 
   final x = BigInt.from(42); // check decrypt(encrypt(x)) == x
-  final cipher = x.modPow(rsaPvt.publicExponent, rsaPvt.modulus);
-  expect(cipher.modPow(rsaPvt.privateExponent, rsaPvt.modulus), equals(x),
+  final cipher = x.modPow(rsaPvt.publicExponent!, rsaPvt.modulus!);
+  expect(cipher.modPow(rsaPvt.privateExponent!, rsaPvt.modulus!), equals(x),
       reason: 'RSA values are incorrect');
 
   // Comment matches expected value (or is absent as expected)
@@ -450,12 +450,12 @@ RSAPublicKeyWithInfo testParse(
 
   // ignore: avoid_as
   final rsaKey = k as RSAPublicKeyWithInfo;
-  expect(rsaKey.source.encoding, equals(PubKeyEncoding.openSsh));
+  expect(rsaKey.source!.encoding, equals(PubKeyEncoding.openSsh));
   expect(rsaKey.modulus, equals(modulus));
-  expect(rsaKey.modulus.bitLength, equals(bitLength));
+  expect(rsaKey.modulus!.bitLength, equals(bitLength));
   expect(rsaKey.exponent, equals(publicExponent));
   final comments = rsaKey.properties.values(SshPublicKeyHeader.commentTag);
-  expect(comments.length, equals(1));
+  expect(comments!.length, equals(1));
   expect(comments.first, equals(expectedComment));
 
   return rsaKey;
@@ -501,8 +501,8 @@ void groupPublicDecode() {
 
       final fmt = SshPublicKey.decode(rfc4716);
 
-      expect(fmt.source.begin, equals(0));
-      expect(fmt.source.end, equals(rfc4716.length));
+      expect(fmt.source!.begin, equals(0));
+      expect(fmt.source!.end, equals(rfc4716.length));
       final srcTxt = fmt.source;
       if (srcTxt is PubTextSource) {
         expect(srcTxt.encoding, equals(PubKeyEncoding.sshPublicKey));
@@ -529,15 +529,15 @@ void groupPublicDecode() {
       final rsaPub = k as RSAPublicKeyWithInfo;
       checkValuesPublic(rsaPub);
 
-      expect(rsaPub.source.begin, equals(0));
-      expect(rsaPub.source.end, equals(rfc4716.length));
-      expect(rsaPub.source.encoding, equals(PubKeyEncoding.sshPublicKey));
+      expect(rsaPub.source!.begin, equals(0));
+      expect(rsaPub.source!.end, equals(rfc4716.length));
+      expect(rsaPub.source!.encoding, equals(PubKeyEncoding.sshPublicKey));
 
       expect(rsaPub.properties.keys.length, equals(1));
-      expect(rsaPub.properties.values('commENT').length,
+      expect(rsaPub.properties.values('commENT')!.length,
           equals(1)); // case insensitive
       expect(
-          rsaPub.properties.values('commENT').first, equals(expectedComment));
+          rsaPub.properties.values('commENT')!.first, equals(expectedComment));
       expect(
           rsaPub.properties.comment, equals(expectedComment)); // case preserved
       // Note: when the RFC 4716 is decoded into a public key, the headers are
@@ -560,10 +560,10 @@ void groupPublicDecode() {
         final rsaPub = k as RSAPublicKeyWithInfo;
 
         checkValuesPublic(rsaPub);
-        expect(rsaPub.source.str, equals(openSshPublic));
-        expect(rsaPub.source.begin, equals(0));
-        expect(rsaPub.source.end, equals(openSshPublic.length));
-        expect(rsaPub.source.encoding, equals(PubKeyEncoding.openSsh));
+        expect(rsaPub.source!.str, equals(openSshPublic));
+        expect(rsaPub.source!.begin, equals(0));
+        expect(rsaPub.source!.end, equals(openSshPublic.length));
+        expect(rsaPub.source!.encoding, equals(PubKeyEncoding.openSsh));
       });
 
       final baseOpenSSH = openSshPublic.replaceAll(' $expectedComment', '');
@@ -603,8 +603,8 @@ void groupPublicDecode() {
       expect(te.source is TextSource, isTrue); // generic
       expect(te.source is PubTextSource, isFalse);
       expect(te.source is PvtTextSource, isFalse);
-      expect(te.source.begin, equals(0));
-      expect(te.source.end, equals(pkcs1PemPublic.length));
+      expect(te.source!.begin, equals(0));
+      expect(te.source!.end, equals(pkcs1PemPublic.length));
 
       // High-level public key parse
 
@@ -614,9 +614,9 @@ void groupPublicDecode() {
       final rsaPub = k as RSAPublicKeyWithInfo;
 
       expect(rsaPub.source is PubTextSource, isTrue);
-      expect(rsaPub.source.begin, equals(0));
-      expect(rsaPub.source.end, equals(pkcs1PemPublic.length));
-      expect(rsaPub.source.encoding, equals(PubKeyEncoding.pkcs1));
+      expect(rsaPub.source!.begin, equals(0));
+      expect(rsaPub.source!.end, equals(pkcs1PemPublic.length));
+      expect(rsaPub.source!.encoding, equals(PubKeyEncoding.pkcs1));
 
       expect(rsaPub.properties.keys.length, equals(0));
       expect(rsaPub.properties.values('commENT'), isNull);
@@ -637,8 +637,8 @@ void groupPublicDecode() {
       expect(te.source is TextSource, isTrue); // generic
       expect(te.source is PubTextSource, isFalse);
       expect(te.source is PvtTextSource, isFalse);
-      expect(te.source.begin, equals(0));
-      expect(te.source.end, equals(x509spki.length));
+      expect(te.source!.begin, equals(0));
+      expect(te.source!.end, equals(x509spki.length));
 
       // High-level public key parse
 
@@ -648,9 +648,9 @@ void groupPublicDecode() {
       final rsaPub = k as RSAPublicKeyWithInfo;
 
       expect(rsaPub.source is PubTextSource, isTrue); // specific with encoding
-      expect(rsaPub.source.begin, equals(0));
-      expect(rsaPub.source.end, equals(x509spki.length));
-      expect(rsaPub.source.encoding, equals(PubKeyEncoding.x509spki));
+      expect(rsaPub.source!.begin, equals(0));
+      expect(rsaPub.source!.end, equals(x509spki.length));
+      expect(rsaPub.source!.encoding, equals(PubKeyEncoding.x509spki));
 
       expect(rsaPub.properties.keys, isEmpty);
       expect(rsaPub.properties.comment, isNull);
@@ -791,9 +791,9 @@ void groupPrivateDecode() {
       final rsaPvt = pvt as RSAPrivateKeyWithInfo;
 
       expect(rsaPvt.source is PvtTextSource, isTrue);
-      expect(rsaPvt.source.begin, equals(0));
-      expect(rsaPvt.source.end, equals(openSshPrivate.length));
-      expect(rsaPvt.source.encoding, equals(PvtKeyEncoding.openSsh));
+      expect(rsaPvt.source!.begin, equals(0));
+      expect(rsaPvt.source!.end, equals(openSshPrivate.length));
+      expect(rsaPvt.source!.encoding, equals(PvtKeyEncoding.openSsh));
 
       checkValuesPrivate(rsaPvt);
 
@@ -835,9 +835,9 @@ void groupPrivateDecode() {
         // ignore: avoid_as
         final rsaPvt = pvt as RSAPrivateKeyWithInfo;
 
-        expect(rsaPvt.source.begin, equals(0));
-        expect(rsaPvt.source.end, equals(puttyPrivateKey.length));
-        expect(rsaPvt.source.encoding, equals(PvtKeyEncoding.puttyPrivateKey));
+        expect(rsaPvt.source!.begin, equals(0));
+        expect(rsaPvt.source!.end, equals(puttyPrivateKey.length));
+        expect(rsaPvt.source!.encoding, equals(PvtKeyEncoding.puttyPrivateKey));
 
         checkValuesPrivate(rsaPvt);
       });
@@ -850,9 +850,9 @@ void groupPrivateDecode() {
         // ignore: avoid_as
         final rsaPvt = pvt as RSAPrivateKeyWithInfo;
 
-        expect(rsaPvt.source.begin, equals(0));
-        expect(rsaPvt.source.end, equals(puttyPrivateKeyNoComment.length));
-        expect(rsaPvt.source.encoding, equals(PvtKeyEncoding.puttyPrivateKey));
+        expect(rsaPvt.source!.begin, equals(0));
+        expect(rsaPvt.source!.end, equals(puttyPrivateKeyNoComment.length));
+        expect(rsaPvt.source!.encoding, equals(PvtKeyEncoding.puttyPrivateKey));
 
         checkValuesPrivate(rsaPvt, expComment: null);
       });
@@ -959,7 +959,7 @@ void groupPrivateEncode() {
       final reconstructed = privateKeyDecode(encoding);
       expect(reconstructed, const TypeMatcher<RSAPrivateKeyWithInfo>());
       // ignore: avoid_as
-      final reconRsa = pvt as RSAPrivateKeyWithInfo;
+      final reconRsa = pvt;
 
       // The reconstructed key should match the source key
 

@@ -40,9 +40,9 @@ class TextualEncoding implements PubTextEncoding {
   // Constructors
 
   //----------------------------------------------------------------
-  /// Creates a textual encoding.
+  /// Creates a textual encoding from values.
 
-  TextualEncoding(this.label, this.data, [this.source]);
+  TextualEncoding(this.label, this.data) : source = null;
 
   //----------------------------------------------------------------
   /// Decode from text.
@@ -54,11 +54,14 @@ class TextualEncoding implements PubTextEncoding {
   /// identified by examining [TextualEncoding.source] in the result
   /// and comparing it any _offset_ that was provided.
 
-  TextualEncoding.decode(String str, {int offset, bool allowPreamble = false}) {
+  TextualEncoding.decode(String str,
+      {int offset = 0, bool allowPreamble = false}) {
     // Set starting offset
 
-    var p = offset ?? 0;
-    assert(0 <= p, 'negative offset');
+    if (offset < 0) {
+      throw ArgumentError.value(offset, 'offset', 'is negative');
+    }
+    var p = offset;
 
     // Skip whitespace
 
@@ -76,7 +79,7 @@ class TextualEncoding implements PubTextEncoding {
     // Note: this implementation does not care if it is at the beginning of a
     // line or not.
 
-    if (allowPreamble != null && allowPreamble) {
+    if (allowPreamble) {
       // Skip any text before the pre-encapsulation boundary
       p = str.indexOf(_boundaryBegin, p);
       if (p < 0) {
@@ -128,7 +131,7 @@ class TextualEncoding implements PubTextEncoding {
 
     // Locate end of encapsulated data
 
-    int dataEnd;
+    int? dataEnd;
 
     while (p < str.length) {
       if (str[p] == '-' &&
@@ -244,18 +247,18 @@ class TextualEncoding implements PubTextEncoding {
   /// spaces or hyphen-minuses, nor do they contain spaces or hyphen-minuses at
   /// either end._"
 
-  String label;
+  late String label;
 
   /// The encapsulated binary data.
 
-  Uint8List data;
+  late Uint8List data;
 
   /// Source this was decoded from.
   ///
   /// Will always be set if this was created by the [TextualEncoding.decode]
-  /// constructor, but otherwise could be null.
+  /// constructor, but otherwise is null.
 
-  TextSource source;
+  late TextSource? source;
 
   //================================================================
   // Methods
@@ -283,13 +286,12 @@ class TextualEncoding implements PubTextEncoding {
 
   @override
   String encode() {
-    final tag = label ?? ''; // so that null labels are treated as empty string
+    final buf = StringBuffer('$_boundaryBegin$label-----\n'); // pre- boundary
 
-    final buf = StringBuffer('$_boundaryBegin$tag-----\n'); // pre- boundary
+    // Encapsulated text (base64 encode and split into lines)
 
-    // Encapsulated text
+    final b64 = base64.encode(data);
 
-    final b64 = (data != null) ? base64.encode(data) : '';
     var p = 0;
     while (p < b64.length) {
       final endPos = (p + 64 < b64.length) ? (p + 64) : b64.length;
@@ -297,7 +299,7 @@ class TextualEncoding implements PubTextEncoding {
       p = endPos;
     }
 
-    buf.write('$_boundaryEnd$tag-----\n'); // post-encapsulation boundary
+    buf.write('$_boundaryEnd$label-----\n'); // post-encapsulation boundary
 
     return buf.toString();
   }

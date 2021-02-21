@@ -49,7 +49,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
   /// Constructor from Pointy Castle RSAPublicKey.
 
   RSAPublicKeyWithInfo.fromRSAPublicKey(pointy_castle.RSAPublicKey pcKey)
-      : super(pcKey.modulus, pcKey.publicExponent);
+      : super(pcKey.modulus!, pcKey.publicExponent!);
 
   //================================================================
   // Methods
@@ -91,7 +91,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
   /// representing each byte. Otherwise, all the hexadecimal characters are
   /// simply concatenated together.
 
-  static String _hex(Uint8List bytes, {String separator}) {
+  static String _hex(Uint8List bytes, {String? separator}) {
     final buf = StringBuffer();
     for (final b in bytes) {
       final s = b.toRadixString(16);
@@ -119,8 +119,8 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
 
   Uint8List _encodeAsChunks() => BinaryLengthValue.encode([
         BinaryLengthValue.fromString(_rsaKeyType), // key-type
-        BinaryLengthValue.fromBigInt(exponent), // public exponent (e)
-        BinaryLengthValue.fromBigInt(modulus) // n
+        BinaryLengthValue.fromBigInt(exponent!), // public exponent (e)
+        BinaryLengthValue.fromBigInt(modulus!) // n
       ]);
 
   //----------------------------------------------------------------
@@ -137,8 +137,8 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
 
   Uint8List _pkcs1bytes() {
     final seq = ASN1Sequence()
-      ..add(ASN1Integer(modulus))
-      ..add(ASN1Integer(exponent));
+      ..add(ASN1Integer(modulus!))
+      ..add(ASN1Integer(exponent!));
 
     return seq.encodedBytes;
   }
@@ -178,7 +178,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
 
     final tags = properties.keys.toList()..sort();
     for (final tag in tags) {
-      for (final value in properties.values(tag)) {
+      for (final value in properties.values(tag)!) {
         headers.add(SshPublicKeyHeader(tag, value));
       }
     }
@@ -255,7 +255,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
 /// https://tools.ietf.org/html/rfc4251#section-5
 
 RSAPublicKeyWithInfo _rsaPublicFromOpenSSH(Uint8List bytes,
-    {String optionalComment, PubTextSource source}) {
+    {String? optionalComment, PubTextSource? source}) {
   assert(
       source == null ||
           source.encoding == PubKeyEncoding.openSsh ||
@@ -371,7 +371,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
   /// Constructor from Pointy Castle RSAPrivateKey.
 
   RSAPrivateKeyWithInfo.fromRSAPrivateKey(pointy_castle.RSAPrivateKey pc)
-      : super(pc.p * pc.q, pc.privateExponent, pc.p, pc.q);
+      : super(pc.p! * pc.q!, pc.privateExponent!, pc.p, pc.q);
 
   //================================================================
   // Methods
@@ -413,7 +413,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     // Encode the public part
 
     final pubBytes =
-        RSAPublicKeyWithInfo(modulus, publicExponent)._encodeAsChunks();
+        RSAPublicKeyWithInfo(modulus!, publicExponent!)._encodeAsChunks();
 
     // Encode the private part
 
@@ -421,15 +421,15 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
 
     final chunks = [
       BinaryLengthValue.fromString(_rsaKeyType),
-      BinaryLengthValue.fromBigInt(modulus),
-      BinaryLengthValue.fromBigInt(publicExponent),
-      BinaryLengthValue.fromBigInt(privateExponent),
-      BinaryLengthValue.fromBigInt(q.modInverse(p)), // IQMP
-      BinaryLengthValue.fromBigInt(p),
-      BinaryLengthValue.fromBigInt(q),
+      BinaryLengthValue.fromBigInt(modulus!),
+      BinaryLengthValue.fromBigInt(publicExponent!),
+      BinaryLengthValue.fromBigInt(privateExponent!),
+      BinaryLengthValue.fromBigInt(q!.modInverse(p!)), // IQMP
+      BinaryLengthValue.fromBigInt(p!),
+      BinaryLengthValue.fromBigInt(q!),
     ];
     if (comment != null) {
-      chunks.add(BinaryLengthValue.fromString(comment));
+      chunks.add(BinaryLengthValue.fromString(comment!));
     }
 
     final pvt = BinaryLengthValue.encode(chunks);
@@ -460,13 +460,13 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
 
   _EncodedPuttyPrivateParts _encodePuttyPrivateParts() {
     final pubBytes =
-        RSAPublicKeyWithInfo(modulus, publicExponent)._encodeAsChunks();
+        RSAPublicKeyWithInfo(modulus!, publicExponent!)._encodeAsChunks();
 
     final pvtBytes = BinaryLengthValue.encode([
-      BinaryLengthValue.fromBigInt(privateExponent),
-      BinaryLengthValue.fromBigInt(p),
-      BinaryLengthValue.fromBigInt(q),
-      BinaryLengthValue.fromBigInt(q.modInverse(p)), // IQMP
+      BinaryLengthValue.fromBigInt(privateExponent!),
+      BinaryLengthValue.fromBigInt(p!),
+      BinaryLengthValue.fromBigInt(q!),
+      BinaryLengthValue.fromBigInt(q!.modInverse(p!)), // IQMP
     ]);
 
     return _EncodedPuttyPrivateParts(_rsaKeyType, pubBytes, pvtBytes, comment);
@@ -500,7 +500,7 @@ https://tools.ietf.org/html/draft-miller-ssh-agent-02#section-4.2.1
 
 RSAPrivateKeyWithInfo _rsaPrivateFromOpenSSH(
     Uint8List publicBytes, Uint8List privateBytes,
-    [PvtTextSource source]) {
+    [PvtTextSource? source]) {
   // Note: the comment is inside the privateBytes. First initialize it to
   // null here and then set it below (once it has been extracted from the
   // privateBytes.
@@ -591,8 +591,8 @@ RSAPrivateKeyWithInfo _rsaPrivateFromOpenSSH(
 //----------------------------------------------------------------
 
 RSAPrivateKeyWithInfo _rsaPrivateFromPPK(
-    Uint8List publicBytes, Uint8List privateBytes, String comment,
-    [PvtTextSource source]) {
+    Uint8List publicBytes, Uint8List privateBytes, String? comment,
+    [PvtTextSource? source]) {
   // The Putty Private Key format and the contents of its public lines and
   // private lines is documented in "sshpubk.c" from the Putty source code.
 
@@ -631,7 +631,7 @@ RSAPrivateKeyWithInfo _rsaPrivateFromPPK(
     throw KeyBad('unexpected extra data in RSA private key');
   }
 
-  return RSAPrivateKeyWithInfo(pub.modulus, privateExponent, p, q)
+  return RSAPrivateKeyWithInfo(pub.modulus!, privateExponent, p, q)
     ..comment = comment
     .._source = source;
 }

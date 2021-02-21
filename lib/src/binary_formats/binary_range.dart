@@ -29,7 +29,7 @@ class BinaryRange {
   /// The _bytes_ are not copied, so the program should not change the data
   /// while the binary range is in use.
 
-  BinaryRange(this.bytes, {int begin, int end})
+  BinaryRange(this.bytes, {int? begin, int? end})
       : begin = begin ?? 0,
         end = end ?? bytes.length;
 

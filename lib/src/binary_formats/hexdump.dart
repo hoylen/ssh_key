@@ -4,7 +4,7 @@ part of ssh_key_bin;
 ///
 /// This is useful for printing out bytes for debugging purposes.
 
-String hexDump(Uint8List privateBytes, {String name}) {
+String hexDump(Uint8List privateBytes, {String? name}) {
   // Dump bytes in hex
 
   final hex = StringBuffer();

@@ -69,7 +69,7 @@ class Properties {
   ///
   /// Returns null if there are no properties with the given name.
 
-  Iterable<String> values(String name) => _data[name];
+  Iterable<String>? values(String name) => _data[name];
 
   //----------------------------------------------------------------
   /// Number of properties.
@@ -93,12 +93,14 @@ class Properties {
   /// (even if it has the same value).
 
   void add(String name, String value) {
-    if (value != null) {
-      if (!_data.containsKey(name)) {
-        _data[name] = <String>[];
-      }
-      _data[name].add(value);
+    var values = _data[name];
+
+    if (values == null) {
+      values = <String>[];
+      _data[name] = values; // create member
     }
+
+    values.add(value);
   }
 
   //----------------------------------------------------------------
@@ -128,15 +130,10 @@ class Properties {
   ///
   /// Returns null if there is no comment property.
 
-  String get comment {
-    if (_data.containsKey(commentName)) {
-      final firstValue = _data[commentName].first;
-      if (firstValue != null) {
-        return firstValue;
-      }
-    }
+  String? get comment {
+    final values = _data[commentName];
 
-    return null; // no comment
+    return values != null ? values.first : null;
   }
 
   //----------------------------------------------------------------
@@ -148,7 +145,7 @@ class Properties {
   /// If the value is null, no new comment property is added. So the properties
   /// will not have any comment properties.
 
-  set comment(String value) {
+  set comment(String? value) {
     if (value != null) {
       _data[commentName] = [value]; // set all to just the one value
     } else {

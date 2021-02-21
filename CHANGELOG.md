@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0-nullsafety.0
+
+- Null safety pre-release.
+
 ## 0.6.1
 
 - Updated dependency on pointycastle to v2.0.1.

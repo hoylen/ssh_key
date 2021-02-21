@@ -36,17 +36,6 @@ void groupEncode() {
 
       //----------------
 
-      test('null data and null label', () {
-        final te = TextualEncoding(null, null);
-
-        expect(
-            te.encode(),
-            equals('-----BEGIN -----\n'
-                '-----END -----\n'));
-      });
-
-      //----------------
-
       test('empty data', () {
         final te = TextualEncoding('EMPTY', Uint8List(0));
 
@@ -112,8 +101,8 @@ void groupDecode() {
             '-----BEGIN EXAMPLE----------END EXAMPLE-----');
         expect(te.label, equals('EXAMPLE'));
         expect(te.data, equals(<int>[]));
-        expect(te.source.begin, equals(0));
-        expect(te.source.end, equals(44));
+        expect(te.source!.begin, equals(0));
+        expect(te.source!.end, equals(44));
 
         expect(te.data.length, equals(0));
       });
@@ -125,8 +114,8 @@ void groupDecode() {
       ''');
         expect(te.label, equals('EXAMPLE'));
         expect(te.data, equals(exampleData));
-        expect(te.source.begin, equals(0));
-        expect(te.source.end, equals(61));
+        expect(te.source!.begin, equals(0));
+        expect(te.source!.end, equals(61));
       });
 
       //----------------
@@ -156,8 +145,8 @@ SGVsbG8gV29ybGQh
             TextualEncoding.decode(textWithPreamble, allowPreamble: true);
         expect(te.label, equals('EXAMPLE'));
         expect(te.data, equals(exampleData));
-        expect(te.source.begin, equals(197));
-        expect(te.source.end, equals(260));
+        expect(te.source!.begin, equals(197));
+        expect(te.source!.end, equals(260));
       });
 
       //----------------
@@ -180,8 +169,8 @@ bGQh
       ''');
         expect(te.label, equals('EXAMPLE'));
         expect(te.data, equals(exampleData));
-        expect(te.source.begin, equals(0));
-        expect(te.source.end, equals(243));
+        expect(te.source!.begin, equals(0));
+        expect(te.source!.end, equals(243));
       });
     });
 
@@ -312,7 +301,7 @@ l4wOuDwKQa+upc8GftXE2C//4mKANBC6It01gUaTIpo=
 
         expect(s3, const TypeMatcher<ASN1BitString>());
         expect(s3.tag, equals(0x03));
-        final bytes = s3.contentBytes();
+        final bytes = s3.contentBytes()!;
         expect(bytes.length, equals(71));
       } else {
         fail('not an ASN1 Sequence');

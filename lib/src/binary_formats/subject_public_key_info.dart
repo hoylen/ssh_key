@@ -48,15 +48,15 @@ class SubjectPublicKeyInfo implements BinaryFormat {
   // Constructors
 
   //----------------------------------------------------------------
-  /// Constructor
+  /// Constructor from values
 
-  SubjectPublicKeyInfo(this.algorithmOid, this.algorithmParameters, this.data,
-      [this.source]);
+  SubjectPublicKeyInfo(this.algorithmOid, this.algorithmParameters, this.data)
+      : source = null;
 
   //----------------------------------------------------------------
   /// Decode from a sequence of bytes.
 
-  SubjectPublicKeyInfo.decode(Uint8List bytes, {this.source}) {
+  SubjectPublicKeyInfo.decode(Uint8List bytes, {required this.source}) {
     String msg;
 
     try {
@@ -100,8 +100,7 @@ class SubjectPublicKeyInfo implements BinaryFormat {
       if (a is! ASN1Sequence) {
         throw _SpkiMsg('algorithm-info is not a sequence');
       }
-      // ignore: avoid_as
-      final algorithmInfo = a as ASN1Sequence;
+      final algorithmInfo = a;
 
       if (algorithmInfo.elements.isEmpty) {
         throw _SpkiMsg('algorithm-info is empty');
@@ -113,8 +112,7 @@ class SubjectPublicKeyInfo implements BinaryFormat {
       if (a1 is! ASN1ObjectIdentifier) {
         throw _SpkiMsg('algorithm-info does not contain OID');
       }
-      // ignore: avoid_as
-      algorithmOid = (a1 as ASN1ObjectIdentifier).identifier;
+      algorithmOid = a1.identifier!;
 
       // Save rest of the algorithm parameters
 
@@ -132,7 +130,7 @@ class SubjectPublicKeyInfo implements BinaryFormat {
         throw _SpkiMsg('publicKey is not a bit string: ${bits.runtimeType}');
       }
       // ignore: avoid_as
-      data = Uint8List.fromList((bits as ASN1BitString).stringValue);
+      data = Uint8List.fromList(bits.stringValue);
 
       return; // success
     } on _SpkiMsg catch (e) {
@@ -141,7 +139,6 @@ class SubjectPublicKeyInfo implements BinaryFormat {
       msg = 'unexpected: $e';
     }
 
-    assert(msg != null);
     throw KeyBad('invalid public key: $msg');
   }
 
@@ -150,22 +147,22 @@ class SubjectPublicKeyInfo implements BinaryFormat {
 
   /// Object Identifier (OID) that identifies the algorithm.
 
-  String algorithmOid;
+  late String algorithmOid;
 
   /// Additional parameters for the algorithm.
 
-  List<ASN1Object> algorithmParameters = [];
+  late List<ASN1Object> algorithmParameters;
 
   /// Binary data containing the public key
 
-  Uint8List data;
+  late Uint8List data;
 
   /// Source this was decoded from.
   ///
   /// Will always be set if this was created by the
-  /// [SubjectPublicKeyInfo.decode] constructor, but otherwise could be null.
+  /// [SubjectPublicKeyInfo.decode] constructor, but otherwise it is null.
 
-  final PubTextSource source;
+  final PubTextSource? source;
 
   //================================================================
   // Methods
@@ -186,8 +183,8 @@ class SubjectPublicKeyInfo implements BinaryFormat {
 
     final ai = ASN1Sequence()
       ..add(ASN1ObjectIdentifier.fromComponentString(algorithmOid));
+    // ignore: prefer_foreach
     for (final param in algorithmParameters) {
-      assert(param != null);
       ai.add(param);
     }
 
