@@ -295,7 +295,9 @@ class TextualEncoding implements PubTextEncoding {
     var p = 0;
     while (p < b64.length) {
       final endPos = (p + 64 < b64.length) ? (p + 64) : b64.length;
-      buf..write(b64.substring(p, endPos))..write('\n');
+      buf
+        ..write(b64.substring(p, endPos))
+        ..write('\n');
       p = endPos;
     }
 

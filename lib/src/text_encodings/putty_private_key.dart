@@ -359,7 +359,9 @@ class PuttyPrivateKey implements PvtTextEncoding {
       final line = (offset + maxLineLength < t.length)
           ? t.substring(offset, offset + maxLineLength)
           : t.substring(offset);
-      buf..write(line)..write('\n');
+      buf
+        ..write(line)
+        ..write('\n');
       offset += maxLineLength;
     }
   }

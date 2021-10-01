@@ -133,7 +133,11 @@ class Properties {
   String? get comment {
     final values = _data[commentName];
 
-    return values != null ? values.first : null;
+    if (values != null) {
+      return values.first; // has comment
+    } else {
+      return null; // no comment: deliberately return null
+    }
   }
 
   //----------------------------------------------------------------

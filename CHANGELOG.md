@@ -3,6 +3,7 @@
 ## 0.7.1
 
 - Avoiding pointycastle v3.1.3: has a bug preventing JavaScript compilation.
+- Added lints package.
 
 ## 0.7.0
 

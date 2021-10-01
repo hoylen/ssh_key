@@ -177,7 +177,7 @@ void testMPInt() {
       }.forEach((title, badBytes) {
         test(title, () {
           try {
-            BinaryRange(Uint8List.fromList(badBytes))..nextMPInt();
+            BinaryRange(Uint8List.fromList(badBytes)).nextMPInt();
             fail('did not throw exception');
           } on KeyBad catch (e) {
             expect(e.message, equals('data incomplete'));
@@ -194,7 +194,7 @@ void testMPInt() {
       }.forEach((title, badBytes) {
         test(title, () {
           try {
-            BinaryRange(Uint8List.fromList(badBytes))..nextMPInt();
+            BinaryRange(Uint8List.fromList(badBytes)).nextMPInt();
             fail('did not throw exception');
           } on KeyBad catch (e) {
             expect(e.message, equals('invalid mpint'));

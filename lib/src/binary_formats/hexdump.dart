@@ -27,7 +27,9 @@ String hexDump(Uint8List privateBytes, {String? name}) {
     if (s.length < 2) {
       hex.write('0');
     }
-    hex..write(s)..write(' ');
+    hex
+      ..write(s)
+      ..write(' ');
     n++;
   }
   hex.write(']\n');

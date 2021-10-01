@@ -190,7 +190,9 @@ class SubjectPublicKeyInfo implements BinaryFormat {
 
     // SubjectPublicKeyInfo
 
-    return ASN1Sequence()..add(ai)..add(ASN1BitString(data));
+    return ASN1Sequence()
+      ..add(ai)
+      ..add(ASN1BitString(data));
   }
 }
 

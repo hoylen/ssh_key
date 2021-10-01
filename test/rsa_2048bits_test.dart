@@ -464,7 +464,7 @@ RSAPublicKeyWithInfo testParse(
 //----------------------------------------------------------------
 
 void badParse(String title, String str, String expectedMessage,
-    {bool noKey: false, bool unsupported: false}) {
+    {bool noKey = false, bool unsupported = false}) {
   test(title, () {
     try {
       testParse(BigInt.zero, BigInt.zero, 2048, str);

@@ -239,11 +239,15 @@ class SshPublicKey implements PubTextEncoding {
         if ((p + 72 < str.length)) {
           // continuation line
           endPos = p + 71;
-          buf..write(str.substring(p, endPos))..write('\\\n');
+          buf
+            ..write(str.substring(p, endPos))
+            ..write('\\\n');
         } else {
           // final line
           endPos = str.length;
-          buf..write(str.substring(p, endPos))..write('\n');
+          buf
+            ..write(str.substring(p, endPos))
+            ..write('\n');
         }
         p = endPos;
       }
@@ -254,7 +258,9 @@ class SshPublicKey implements PubTextEncoding {
     var p = 0;
     while (p < b64.length) {
       final endPos = (p + 72 < b64.length) ? (p + 72) : b64.length;
-      buf..write(b64.substring(p, endPos))..write('\n');
+      buf
+        ..write(b64.substring(p, endPos))
+        ..write('\n');
       p = endPos;
     }
 

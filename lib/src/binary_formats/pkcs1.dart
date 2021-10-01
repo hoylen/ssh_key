@@ -105,8 +105,9 @@ class Pkcs1RsaPublicKey implements BinaryFormat {
   //----------------------------------------------------------------
   /// Encode as ASN.1.
 
-  ASN1Object _asn1() =>
-      ASN1Sequence()..add(ASN1Integer(modulus))..add(ASN1Integer(exponent));
+  ASN1Object _asn1() => ASN1Sequence()
+    ..add(ASN1Integer(modulus))
+    ..add(ASN1Integer(exponent));
 }
 
 //################################################################

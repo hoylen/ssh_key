@@ -6,9 +6,9 @@ DIST_DIR=dist
 
 help:
 	@echo "Make targets:"
-	@echo "  dartfmt  - reformat code"
-	@echo "  dartdoc  - generate documentation"
-	@echo "  clean    - delete generated files"
+	@echo "  format   reformat code"
+	@echo "  dartdoc  generate documentation"
+	@echo "  clean    delete generated files"
 
 # ssh-keygen -t rsa -b 2048 -f rsa2048
 # ssh-keygen -t rsa -b 4096 -f rsa4096
@@ -19,8 +19,8 @@ help:
 #----------------------------------------------------------------
 # Development targets
 
-dartfmt:
-	@dartfmt -w lib test examples | grep -v ^Unchanged
+format:
+	@dart format lib test examples
 
 #----------------------------------------------------------------
 # Documentation

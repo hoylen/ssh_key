@@ -16,4 +16,5 @@ dependencies:
 # must use 3.2.0 or newer.
 
 dev_dependencies:
+  lints: ^1.0.1
   test: '^1.15.4'
