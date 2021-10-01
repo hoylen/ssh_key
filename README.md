@@ -97,7 +97,7 @@ classes to represent RSA keys, and implements symmetric encryption
 algorithms (which will be needed when support for encrypted private
 keys is added). In theory, this package could have been independent of
 any cryptographic package, but it would then have to implement its own
-classes for reprsenting the keys.
+classes for representing the keys.
 
 _Note: support for other formats is limited by the lack of
 documentation about the format (since they are often proprietary).
