@@ -200,7 +200,7 @@ BQYHCAkK
 -----END OPENSSH PRIVATE KEY-----
 ''';
 
-// The old or original OpenSSH private key file format
+// The old or original OpenSSH private key file format (unencrypted)
 
 const pkcs1PemPrivate = '''
 -----BEGIN RSA PRIVATE KEY-----
@@ -808,22 +808,22 @@ void groupPrivateDecode() {
     });
 
     //----------------
-/*
-    test('PKCS #1 Private Key', () {
-      final pvt = KeyPrivate.decode(pkcs1PemPrivate);
+
+    test('Unencrypted PKCS #1 Private Key', () {
+      final pvt = privateKeyDecode(pkcs1PemPrivate);
       expect(pvt, isNotNull);
 
-      expect(pvt, TypeMatcher<KeyPrivateRsa>());
+      expect(pvt, TypeMatcher<RSAPrivateKeyWithInfo>());
 
-      final rsa = pvt as KeyPrivateRsa;
+      final rsa = pvt as RSAPrivateKeyWithInfo;
 
-      expect(rsa.sourceText.begin, equals(0));
-      expect(rsa.sourceText.end, equals(pkcs1PemPrivate.length));
-      expect(rsa.sourceText.encoding, equals(PvtKeyEncoding.openSsh));
+      expect(rsa.source!.begin, equals(0));
+      expect(rsa.source!.end, equals(pkcs1PemPrivate.length));
+      expect(rsa.source!.encoding, equals(PvtKeyEncoding.pkcs1));
 
-      checkValuesPrivate(rsa);
+      checkValuesPrivate(rsa, expComment: null);
     });
-*/
+
     //----------------
 
     group('PuTTY Private Key', () {

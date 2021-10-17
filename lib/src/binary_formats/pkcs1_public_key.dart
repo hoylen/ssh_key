@@ -41,7 +41,7 @@ class Pkcs1RsaPublicKey implements BinaryFormat {
 
       if (objects.length != 1) {
         throw _Pkcs1Msg(
-            'PKCS#1 has wrong number of objects (expecting 1, got ${objects.length})');
+            'ASN.1 encoding has wrong number of objects (expecting 1, got ${objects.length})');
       }
 
       final topSequence = objects.first;
@@ -117,21 +117,3 @@ class _Pkcs1Msg implements Exception {
   _Pkcs1Msg(this.message);
   String message;
 }
-
-//################################################################
-/// https://tools.ietf.org/html/rfc2437#section-11.1.2
-/*
-class Pkcs1PrivateKey implements BinaryFormat {
-
-  //================================================================
-  // Methods
-
-  //----------------------------------------------------------------
-  /// Encode as a sequence of bytes.
-
-  @override
-  Uint8List encode() => throw UnimplementedError();
-
-}
-
- */

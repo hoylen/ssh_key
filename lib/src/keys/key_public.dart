@@ -214,7 +214,8 @@ pointy_castle.PublicKey publicKeyDecode(String str,
         throw KeyUnsupported('unsupported algorithm: ${spki.algorithmOid}');
       }
     } else {
-      throw KeyUnsupported('unsupported label: ${block.label}');
+      throw KeyUnsupported(
+          'unsupported label for a public key: ${block.label}');
     }
   }
 

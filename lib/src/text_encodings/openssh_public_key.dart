@@ -246,6 +246,6 @@ class OpenSshPublicKey implements PubTextEncoding {
 
     // Produce the one-line encoding
 
-    return '$keyType ${base64.encode(data)}$spacePlusComment';
+    return '$keyType ${base64.encode(data)}$spacePlusComment\n';
   }
 }

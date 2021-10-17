@@ -2,3 +2,6 @@
 .dart_tool/
 .idea/
 .DS_Store
+
+# Dart package: do not commit the pubspec.lock file
+pubspec.lock

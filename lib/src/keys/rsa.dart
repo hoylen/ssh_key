@@ -16,9 +16,14 @@ const _rsaKeyType = 'ssh-rsa';
 
 const _rsaAlgorithmOid = '1.2.840.113549.1.1.1';
 
-const _rsaPkcs1label = 'RSA PUBLIC KEY';
+// Textual Encoding labels for the public key formats
 
-const _rsaPkcs8label = 'PUBLIC KEY';
+const _rsaPublicPkcs1label = 'RSA PUBLIC KEY';
+const _rsaPublicX509spkiLabel = 'PUBLIC KEY';
+
+// Textual Encoding labels for the private key formats
+
+const _rsaPrivatePkcs1label = 'RSA PRIVATE KEY';
 
 //################################################################
 /// An RSA public key with additional information.
@@ -205,7 +210,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
   /// with the appropriate format, which will invoke this method.
 
   String encodePkcs1() {
-    final container = TextualEncoding(_rsaPkcs1label, _pkcs1bytes());
+    final container = TextualEncoding(_rsaPublicPkcs1label, _pkcs1bytes());
     return container.encode();
   }
 
@@ -221,7 +226,7 @@ class RSAPublicKeyWithInfo extends pointy_castle.RSAPublicKey
     final spki =
         SubjectPublicKeyInfo(_rsaAlgorithmOid, [ASN1Null()], _pkcs1bytes());
 
-    final fmt = TextualEncoding(_rsaPkcs8label, spki.encode());
+    final fmt = TextualEncoding(_rsaPublicX509spkiLabel, spki.encode());
     return fmt.encode();
   }
 }
@@ -401,6 +406,15 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     // TODO
   }
 
+  /// Encode into the PKCS#1 Private Key format.
+
+  String encodePkcs1PrivateKey(String passphrase) {
+    final e = _encodePkcs1PrivateParts();
+
+    final fmt = TextualEncoding(_rsaPrivatePkcs1label, e);
+    return fmt.encode();
+  }
+
   //----------------------------------------------------------------
   /// Encode an RSA public key in the OpenSSH public key format.
   ///
@@ -471,12 +485,30 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
 
     return _EncodedPuttyPrivateParts(_rsaKeyType, pubBytes, pvtBytes, comment);
   }
+
+  Uint8List _encodePkcs1PrivateParts() {
+    final bytes = BinaryLengthValue.encode([
+      BinaryLengthValue.fromBigInt(BigInt.zero), // version
+      BinaryLengthValue.fromBigInt(modulus!), // n
+      BinaryLengthValue.fromBigInt(publicExponent!), // e
+      BinaryLengthValue.fromBigInt(privateExponent!), // d
+
+      BinaryLengthValue.fromBigInt(p!), // prime 1
+      BinaryLengthValue.fromBigInt(q!), // prime 2
+      BinaryLengthValue.fromBigInt(privateExponent! % (p! - BigInt.one)), //exp1
+      BinaryLengthValue.fromBigInt(privateExponent! % (q! - BigInt.one)), //exp2
+      BinaryLengthValue.fromBigInt(q!.modInverse(p!)), // coefficient
+      // otherPrimeInfos: forbidden in version 0
+    ]);
+
+    return bytes;
+  }
 }
 
 //################################################################
 
 /*
-PRIVATE KEY
+PRIVATE Key
 
 You can recognize the PKCS#1 format by the "BEGIN RSA PRIVATE KEY" header, and
  PKCS#8 by the "BEGIN PRIVATE KEY" header. You can use dumpasn1 or
@@ -636,22 +668,12 @@ RSAPrivateKeyWithInfo _rsaPrivateFromPPK(
     .._source = source;
 }
 
-// A RSA Private Key syntax is defined by:
-// https://tools.ietf.org/html/rfc8017#page-54
-//
-//          RSAPrivateKey ::= SEQUENCE {
-//              version           Version,
-//              modulus           INTEGER,  -- n
-//              publicExponent    INTEGER,  -- e
-//              privateExponent   INTEGER,  -- d
-//              prime1            INTEGER,  -- p
-//              prime2            INTEGER,  -- q
-//              exponent1         INTEGER,  -- d mod (p-1)
-//              exponent2         INTEGER,  -- d mod (q-1)
-//              coefficient       INTEGER,  -- (inverse of q) mod p
-//              otherPrimeInfos   OtherPrimeInfos OPTIONAL
-//          }
-// But is it used by SSH?
-//
-// There is also:
-// https://tools.ietf.org/html/rfc5208
+//----------------------------------------------------------------
+
+RSAPrivateKeyWithInfo _rsaPrivateFromPkcs1(Pkcs1RsaPrivateKey pkcs1) {
+  final result = RSAPrivateKeyWithInfo(
+      pkcs1.modulus, pkcs1.privateExponent, pkcs1.prime1, pkcs1.prime2)
+    .._source = pkcs1.source;
+
+  return result;
+}

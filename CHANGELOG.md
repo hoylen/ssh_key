@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0-beta
+
+- Support for unencrypted PKCS#1 private keys.
+
 ## 0.7.1
 
 - Avoiding pointycastle v3.1.3: has a bug preventing JavaScript compilation.

@@ -2,51 +2,219 @@
 //
 // Example from README.md file.
 //
+// Parses a file as either a public key or a private key, and output the
+// parameters from the key. Optionally, also output an encoding of the key.
+//
 // Example:
 //
-//     dart example.dart test-rsa-key.pem
+//     dart example.dart --public test-rsa-public-key.pem
+//     dart example.dart --public test-rsa-public-key.pem --openssh
+//     dart example.dart --private test-rsa-private-key.pem
+//
+//     dart example.dart --help
 
 import 'dart:io';
 import 'package:ssh_key/ssh_key.dart' as ssh_key;
 
-void main(List<String> args) {
-  if (args.isEmpty) {
-    stderr.write('Usage error: missing public key filename\n');
-    exit(1);
-  }
-  if (1 < args.length) {
-    stderr.write('Usage error: too many arguments\n');
-    exit(1);
-  }
+void processPublic(String str, bool verbose, ssh_key.PubKeyEncoding? format) {
+  // Decode a public key
 
-  final filename = args[0];
-  final outputFormat = ssh_key.PubKeyEncoding.sshPublicKey;
-  // final outputFormat = ssh_key.PubKeyEncoding.openSSH;
-  // final outputFormat = ssh_key.PubKeyEncoding.pkcs1;
-  // final outputFormat = ssh_key.PubKeyEncoding.x509spki;
+  final pubKey = ssh_key.publicKeyDecode(str);
 
-  // Read the file and decoding it
+  // Output the values in the public key
 
-  final srcEncoding = File(filename).readAsStringSync();
+  if (verbose) {
+    if (pubKey is ssh_key.RSAPublicKeyWithInfo) {
+      // Use the RSA public key
+      //
+      // This example just prints out the RSA parameters to stderr (so only
+      // encoded output goes to stdout).
 
-  final pubKey = ssh_key.publicKeyDecode(srcEncoding);
-
-  if (pubKey is ssh_key.RSAPublicKeyWithInfo) {
-    // Use the RSA public key (this example just prints it out)
-
-    stderr.write('''RSA public key:
-  fingerprint: ${pubKey.fingerprint()}
+      stderr.write('''RSA public key:
   modulus: ${pubKey.n}
   public exponent: ${pubKey.publicExponent}
+
+  fingerprint: ${pubKey.fingerprint()}
 ''');
-    // The modulus and public exponent (n and e) are available,
-    // because the RSAPublicKeyWithInfo is a subclass of the
-    // Pointy Castle RSAPublicKey class.
+    } else {
+      stderr.writeln('Error: recognised public key, but not RSA');
+      exit(1);
+    }
   }
 
-  // Encode the public key and printing it out
+  // Encode the public key
 
-  final destEncoding = pubKey.encode(outputFormat);
+  if (format != null) {
+    final destEncoding = pubKey.encode(format);
+    stdout.write(destEncoding);
+  }
+}
 
-  stdout.write(destEncoding);
+void processPrivate(String str, bool verbose, ssh_key.PvtKeyEncoding? format) {
+  // Decode a private key
+
+  final privateKey = ssh_key.privateKeyDecode(str);
+
+  // Output the values in the private key
+
+  if (verbose) {
+    if (privateKey is ssh_key.RSAPrivateKeyWithInfo) {
+      // Use the RSA private key
+      //
+      // This example just prints out the RSA parameters to stderr (so only
+      // encoded output goes to stdout).
+
+      stderr.write('''RSA public key:
+  modulus: ${privateKey.modulus}
+  public exponent: ${privateKey.publicExponent}
+  private exponent: ${privateKey.privateExponent}
+
+  prime1 (p): ${privateKey.p}
+  prime2 (q): ${privateKey.q}
+''');
+    } else {
+      stderr.writeln('Error: recognised private key, but not RSA');
+      exit(1);
+    }
+  }
+
+  // Encode the private key
+
+  if (format != null) {
+    final destEncoding = privateKey.encode(format);
+    stdout.write(destEncoding);
+  }
+}
+
+/// Command line options
+
+class Options {
+  /// Parse the command line arguments.
+
+  Options(List<String> args) {
+    bool usageError = true;
+
+    if (args.isNotEmpty) {
+      String? outputFormatArg;
+      final filenames = <String>[];
+
+      usageError = false;
+
+      for (final arg in args) {
+        if (arg.startsWith('-')) {
+          switch (arg) {
+            case '--public':
+              isPublic = true;
+              break;
+            case '--private':
+            case '--secret':
+            case '-s':
+              isPublic = false;
+              break;
+            case '--verbose':
+            case '-v':
+              verbose = true;
+              break;
+            case '--openssh':
+            case '--ssh':
+            case '--pkcs1':
+            case '--x509spki':
+            case '--putty':
+              outputFormatArg = arg;
+              break;
+            default:
+              usageError = true;
+              break;
+          }
+        } else {
+          filenames.add(arg);
+        }
+      }
+
+      if (filenames.length == 1) {
+        filename = filenames.first;
+      } else {
+        usageError = true; // missing filename or too many arguments
+      }
+
+      // Set output format, if requested
+
+      if (isPublic) {
+        if (outputFormatArg != null) {
+          publicKeyOutFormat = {
+            '--openssh': ssh_key.PubKeyEncoding.openSsh,
+            '--ssh': ssh_key.PubKeyEncoding.sshPublicKey,
+            '--pkcs1': ssh_key.PubKeyEncoding.pkcs1,
+            '--x509spki': ssh_key.PubKeyEncoding.x509spki,
+          }[outputFormatArg];
+          if (publicKeyOutFormat == null) {
+            stderr.writeln('Error: $outputFormatArg not for a public key');
+            usageError = true;
+          }
+        }
+      } else {
+        if (outputFormatArg != null) {
+          privateKeyOutFormat = {
+            '--openssh': ssh_key.PvtKeyEncoding.openSsh,
+            '--putty': ssh_key.PvtKeyEncoding.puttyPrivateKey,
+            '--pkcs1': ssh_key.PvtKeyEncoding.pkcs1,
+          }[outputFormatArg];
+          if (privateKeyOutFormat == null) {
+            stderr.writeln('Error: $outputFormatArg not for a private key');
+            usageError = true;
+          }
+        }
+      }
+    } else {
+      usageError = true; // missing filename
+    }
+
+    if (usageError) {
+      stderr.write('''
+Usage: example [options] filename
+Options:
+  --public    file contains a public key (default)
+  --private   file contains a private key
+  --verbose   show the key parameters
+
+Output format for public keys:  
+  --openssh   old OpenSSH public key format: one line
+  --ssh       new OpenSSH public key format: SSH2
+  --pkcs1     PKCS#1 format
+  --x509spki  X.509 Subject Public Key Information (incorrectly known as PKCS#8)
+
+Output format for private keys only:
+  --openssh   OpenSSH format (old format)
+  --pkcs1     PKCS#1 format
+  --putty     Putty Private Key (PPK) format
+''');
+      exit(2);
+    }
+  }
+
+  bool isPublic = true;
+  late String filename;
+
+  bool verbose = false;
+
+  ssh_key.PubKeyEncoding? publicKeyOutFormat;
+  ssh_key.PvtKeyEncoding? privateKeyOutFormat;
+}
+
+void main(List<String> args) {
+  // Parse command line arguments
+
+  final options = Options(args);
+
+  // Read the file contents
+
+  final srcEncoding = File(options.filename).readAsStringSync();
+
+  // Parse the contents and output the results
+
+  if (options.isPublic) {
+    processPublic(srcEncoding, options.verbose, options.publicKeyOutFormat);
+  } else {
+    processPrivate(srcEncoding, options.verbose, options.privateKeyOutFormat);
+  }
 }

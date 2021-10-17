@@ -1,5 +1,5 @@
 name: ssh_key
-version: 0.7.1
+version: 0.8.0-beta
 description: Encodes and decodes keys to/from different text file formats.
 homepage: https://github.com/hoylen/ssh_key
 
@@ -11,7 +11,7 @@ dependencies:
   pointycastle: '^3.2.0'
   tuple: '^2.0.0'
 
-# Important: pointcastle 3.1.3 introduced a bug with large integers,
+# Important: pointycastle 3.1.3 introduced a bug with large integers,
 # making it impossible to compile to JavaScript. Therefore, this
 # must use 3.2.0 or newer.
 

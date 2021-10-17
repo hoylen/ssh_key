@@ -28,5 +28,6 @@ part 'src/binary_formats/binary_length_value.dart';
 part 'src/binary_formats/binary_range.dart';
 part 'src/binary_formats/hexdump.dart';
 part 'src/binary_formats/openssh_private_key.dart';
-part 'src/binary_formats/pkcs1.dart';
+part 'src/binary_formats/pkcs1_public_key.dart';
+part 'src/binary_formats/pkcs1_private_key.dart';
 part 'src/binary_formats/subject_public_key_info.dart';

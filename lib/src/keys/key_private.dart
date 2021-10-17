@@ -96,6 +96,8 @@ String _privateKeyEncode(pointy_castle.PrivateKey pvtKey, PvtKeyEncoding format,
         return pvtKey.encodeOpenSshPrivateKey();
       case PvtKeyEncoding.puttyPrivateKey:
         return pvtKey.encodePuttyPrivateKey(passphrase);
+      case PvtKeyEncoding.pkcs1:
+        return pvtKey.encodePkcs1PrivateKey(passphrase);
     }
   } else if (pvtKey is pointy_castle.RSAPrivateKey) {
     // Pointy Castle RSAPrivateKey: upgrade it and encode that
@@ -152,57 +154,107 @@ pointy_castle.PrivateKey privateKeyDecode(String str,
     }
   }
 
-  if (str.startsWith(PuttyPrivateKey.puttyKeyTypeTag, p)) {
-    final ppk = PuttyPrivateKey.decode(str, offset: p);
+  // Try the formats that uses the RFC 7468 Textual Encoding
 
-    switch (ppk.keyType) {
-      case 'ssh-rsa':
-        break;
-      default:
-        throw KeyUnsupported('unsupported algorithm: ${ppk.keyType}');
-    }
-
-    return _rsaPrivateFromPPK(
-        ppk.publicKeyBytes, ppk.privateKeyBytes, ppk.comment, ppk.source);
-
-    // TODO
-
-  } else if (str.startsWith('---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----')) {
-    throw KeyUnsupported('SSH.com keys not implemented yet');
-  } else {
-    // Try Textual Encoding
-
-    final block =
+  TextualEncoding? teBlock;
+  try {
+    teBlock =
         TextualEncoding.decode(str, offset: p, allowPreamble: allowPreamble);
+  } catch (e) {
+    // Not RFC 7468 Textual Encoding: leave teBlock null
+  }
 
-    if (block.label == 'OPENSSH PRIVATE KEY') {
-      // OpenSSH Private Key (i.e. the new OpenSSH format)
-      // Data is ... TODO
+  if (teBlock != null) {
+    // Is encoded using RFC 7468 Textual Encoding
 
-      final ospk = OpenSshPrivateKey.decode(block.data,
-          source:
-              PvtTextSource.setEncoding(block.source!, PvtKeyEncoding.openSsh));
-      // TODO: use private key format!!!
+    if (teBlock.label == 'OPENSSH PRIVATE KEY') {
+      // Starts with: -----BEGIN OPENSSH PRIVATE KEY-----
+      return _privateKeyDecodeOpenSSH(teBlock, p); // new OpenSSH format
 
-      switch (ospk.privateKeyType) {
-        case 'ssh-rsa':
-          return _rsaPrivateFromOpenSSH(
-              ospk.publicKeyBytes, ospk.privateKeyBytes, ospk.source);
-
-        default:
-          throw KeyUnsupported('unsupported algorithm: ${ospk.privateKeyType}');
-      }
-    } else if (block.label == 'RSA PRIVATE KEY') {
-      // PKCS #1 Private Key (i.e. the original OpenSSH format)
-
-      //print(_hexDump(block.data, name: 'PKCS #1 Private Key data'));
-      print('PKCS #1 data length: ${block.data.length}');
-
-      throw KeyUnsupported('Decoding PKCS #1 Private Key not implemented yet');
+    } else if (teBlock.label == _rsaPrivatePkcs1label) {
+      // Starts with: -----BEGIN RSA PRIVATE KEY-----
+      // Unencrypted old OpenSSH format (also known as PKCS#1).
+      return _privateKeyDecodePkcs1(teBlock, p);
+    } else if (teBlock.label == 'PRIVATE KEY') {
+      // Starts with: -----BEGIN PRIVATE KEY-----
+      // PKCS#8.
+      throw KeyUnsupported('PKCS#8 private key not yet implemented');
     } else {
-      throw KeyUnsupported('unsupported label: ${block.label}');
+      throw KeyUnsupported(
+          'unsupported label for a private key: ${teBlock.label}');
     }
   }
+
+  // Try formats that are not RFC 7468 Textual Encoding
+
+  if (str.startsWith('-----BEGIN $_rsaPrivatePkcs1label-----')) {
+    // Starts with: -----BEGIN RSA PRIVATE KEY-----
+    // Encrypted old OpenSSH format (also known as PKCS#1).
+    throw KeyUnsupported('Encrypted RSA private key not implemented yet');
+  } else if (str.startsWith(PuttyPrivateKey.puttyKeyTypeTag, p)) {
+    // Starts with: PuTTY-User-Key-File-2
+    // Putty private key
+    return _privateKeyDecodePutty(str, p);
+  } else if (str.startsWith('---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----')) {
+    // Starts with: ---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----
+    // Proprietary format by SSH.com's implementation of SSH
+    throw KeyUnsupported('SSH.com keys not implemented yet');
+  }
+
+  // Finally, give up
+
+  throw KeyUnsupported('unrecognised private key format');
+}
+
+//----------------
+
+pointy_castle.PrivateKey _privateKeyDecodePutty(String str, int offset) {
+  final ppk = PuttyPrivateKey.decode(str, offset: offset);
+
+  switch (ppk.keyType) {
+    case 'ssh-rsa':
+      break;
+    default:
+      throw KeyUnsupported('unsupported algorithm: ${ppk.keyType}');
+  }
+
+  return _rsaPrivateFromPPK(
+      ppk.publicKeyBytes, ppk.privateKeyBytes, ppk.comment, ppk.source);
+
+  // TODO
+}
+
+//----------------
+
+pointy_castle.PrivateKey _privateKeyDecodeOpenSSH(
+    TextualEncoding block, int offset) {
+  // OpenSSH Private Key (i.e. the new OpenSSH format)
+  // Data is ... TODO
+
+  final ospk = OpenSshPrivateKey.decode(block.data,
+      source: PvtTextSource.setEncoding(block.source!, PvtKeyEncoding.openSsh));
+  // TODO: use private key format!!!
+
+  switch (ospk.privateKeyType) {
+    case 'ssh-rsa':
+      return _rsaPrivateFromOpenSSH(
+          ospk.publicKeyBytes, ospk.privateKeyBytes, ospk.source);
+
+    default:
+      throw KeyUnsupported('unsupported algorithm: ${ospk.privateKeyType}');
+  }
+}
+
+//----------------
+
+pointy_castle.PrivateKey _privateKeyDecodePkcs1(
+    TextualEncoding block, int offset) {
+  // PKCS #1 Private Key (i.e. the old OpenSSH format)
+
+  final p = Pkcs1RsaPrivateKey.decode(block.data,
+      PvtTextSource.setEncoding(block.source!, PvtKeyEncoding.pkcs1));
+
+  return _rsaPrivateFromPkcs1(p);
 }
 
 // https://coolaj86.com/articles/the-openssh-private-key-format/
