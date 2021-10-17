@@ -134,8 +134,16 @@ class OpenSshPublicKey implements PubTextEncoding {
 
     // Parse optional comment
 
-    if (p < str.length && (str[p] == ' ')) {
-      // There is space, so the rest of the line is a comment
+    if (p == str.length) {
+      // End of string string
+      comment = null; // no comment
+
+    } else if (str[p] == '\r' || str[p] == '\n') {
+      // End of the line
+      comment = null; // no comment
+
+    } else if (str[p] == ' ') {
+      // There is a space after the base64, so the rest of the line is a comment
 
       p++; // skip over the space
 
@@ -148,10 +156,6 @@ class OpenSshPublicKey implements PubTextEncoding {
       }
 
       comment = str.substring(commentStart, p);
-    } else if (p < str.length && str[p] != '\r' && str[p] != '\n' ||
-        p == str.length) {
-      // End of the line or end of string
-      comment = null; // no comment
     } else {
       throw KeyBad('OpenSSH Public Key: base64 terminated incorrectly');
     }

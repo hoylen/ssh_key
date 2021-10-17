@@ -3,6 +3,7 @@
 ## 0.8.0-beta
 
 - Support for unencrypted PKCS#1 private keys.
+- Fixed parsing bug when there is no comment in an OpenSSH public key.
 
 ## 0.7.1
 
