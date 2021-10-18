@@ -147,6 +147,12 @@ pointy_castle.PublicKey publicKeyDecode(String str,
     }
   }
 
+  // Early abort
+
+  if (p == str.length) {
+    throw KeyUnsupported('no public key found');
+  }
+
   // Try OpenSSH format (since it is the only one that cannot skip preamble)
 
   if (str.startsWith('ssh-', p)) {
@@ -219,7 +225,7 @@ pointy_castle.PublicKey publicKeyDecode(String str,
     }
   }
 
-  throw KeyMissing('no key found');
+  throw KeyMissing('no public key found');
 }
 
 //----------------------------------------------------------------

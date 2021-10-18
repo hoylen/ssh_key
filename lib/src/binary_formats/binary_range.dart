@@ -188,14 +188,14 @@ class BinaryRange {
   /// interpreted as UTF-8 and returned as a String, instead of a range of
   /// binary bytes.
   ///
-  /// Throws a BadEncoding if there are insufficient bytes in the range.
+  /// Throws a KeyBad if there are insufficient bytes in the range.
   /// Throws an exception if the bytes are not correct for the encoding.
 
   String nextString({Encoding encoding = utf8}) {
     final length = nextUint32();
 
     if (end < begin + length) {
-      throw KeyBad('data incomplete');
+      throw KeyBad('data incomplete for string of $length bytes');
     }
 
     final rawString = bytes.sublist(begin, begin + length);

@@ -389,9 +389,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     final container = OpenSshPrivateKey(
         'none', 'none', Uint8List.fromList(<int>[]), parts.item1, parts.item2);
 
-    final te = TextualEncoding('OPENSSH PRIVATE KEY', container.encode());
-
-    return te.encode();
+    return TextualEncoding('OPENSSH PRIVATE KEY', container.encode()).encode();
   }
 
   /// Encode into the PuTTY Private Key format.
@@ -399,20 +397,17 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
   String encodePuttyPrivateKey(String passphrase) {
     final e = _encodePuttyPrivateParts();
 
-    final container = PuttyPrivateKey(
-        e.keyType, 'none', e.publicBytes, e.privateBytes, e.comment);
-
-    return container.encode(passphrase);
-    // TODO
+    return PuttyPrivateKey(
+            e.keyType, 'none', e.publicBytes, e.privateBytes, e.comment)
+        .encode(passphrase);
   }
 
   /// Encode into the PKCS#1 Private Key format.
 
   String encodePkcs1PrivateKey(String passphrase) {
-    final e = _encodePkcs1PrivateParts();
+    final b = Pkcs1RsaPrivateKey(modulus!, privateExponent!, p!, q!).encode();
 
-    final fmt = TextualEncoding(_rsaPrivatePkcs1label, e);
-    return fmt.encode();
+    return TextualEncoding(_rsaPrivatePkcs1label, b).encode();
   }
 
   //----------------------------------------------------------------
@@ -444,6 +439,8 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     ];
     if (comment != null) {
       chunks.add(BinaryLengthValue.fromString(comment!));
+    } else {
+      chunks.add(BinaryLengthValue.fromString('')); // zero length string
     }
 
     final pvt = BinaryLengthValue.encode(chunks);
@@ -454,7 +451,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     // the block size is 8 when the key isn't encrypted
     const _pvtBlockSize = 16; // block size for the rnd+pvt+comment+pad
 
-    final blockOverflow = (pvt.length % _pvtBlockSize);
+    final blockOverflow = ((dummyPrefix.length + pvt.length) % _pvtBlockSize);
 
     final padding = <int>[];
     if (blockOverflow != 0) {
@@ -484,24 +481,6 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
     ]);
 
     return _EncodedPuttyPrivateParts(_rsaKeyType, pubBytes, pvtBytes, comment);
-  }
-
-  Uint8List _encodePkcs1PrivateParts() {
-    final bytes = BinaryLengthValue.encode([
-      BinaryLengthValue.fromBigInt(BigInt.zero), // version
-      BinaryLengthValue.fromBigInt(modulus!), // n
-      BinaryLengthValue.fromBigInt(publicExponent!), // e
-      BinaryLengthValue.fromBigInt(privateExponent!), // d
-
-      BinaryLengthValue.fromBigInt(p!), // prime 1
-      BinaryLengthValue.fromBigInt(q!), // prime 2
-      BinaryLengthValue.fromBigInt(privateExponent! % (p! - BigInt.one)), //exp1
-      BinaryLengthValue.fromBigInt(privateExponent! % (q! - BigInt.one)), //exp2
-      BinaryLengthValue.fromBigInt(q!.modInverse(p!)), // coefficient
-      // otherPrimeInfos: forbidden in version 0
-    ]);
-
-    return bytes;
   }
 }
 
@@ -574,7 +553,8 @@ RSAPrivateKeyWithInfo _rsaPrivateFromOpenSSH(
   final p = privateKeyRange.nextMPInt();
   final q = privateKeyRange.nextMPInt();
 
-  final pvtComment = privateKeyRange.nextString();
+  final c = privateKeyRange.nextString();
+  final pvtComment = c.isNotEmpty ? c : null; // comment or null
 
   // According to https://coolaj86.com/articles/the-openssh-private-key-format/
   // the block size is 8 when it is not encrypted
@@ -625,7 +605,7 @@ RSAPrivateKeyWithInfo _rsaPrivateFromOpenSSH(
 RSAPrivateKeyWithInfo _rsaPrivateFromPPK(
     Uint8List publicBytes, Uint8List privateBytes, String? comment,
     [PvtTextSource? source]) {
-  // The Putty Private Key format and the contents of its public lines and
+  // The PuTTY Private Key format and the contents of its public lines and
   // private lines is documented in "sshpubk.c" from the Putty source code.
 
   // Parse the public key data:

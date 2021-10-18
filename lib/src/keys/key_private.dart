@@ -193,7 +193,7 @@ pointy_castle.PrivateKey privateKeyDecode(String str,
     throw KeyUnsupported('Encrypted RSA private key not implemented yet');
   } else if (str.startsWith(PuttyPrivateKey.puttyKeyTypeTag, p)) {
     // Starts with: PuTTY-User-Key-File-2
-    // Putty private key
+    // PuTTY Private Key
     return _privateKeyDecodePutty(str, p);
   } else if (str.startsWith('---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----')) {
     // Starts with: ---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----
@@ -203,7 +203,7 @@ pointy_castle.PrivateKey privateKeyDecode(String str,
 
   // Finally, give up
 
-  throw KeyUnsupported('unrecognised private key format');
+  throw KeyMissing('no private key found');
 }
 
 //----------------

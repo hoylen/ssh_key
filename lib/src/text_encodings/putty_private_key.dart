@@ -42,7 +42,7 @@ class PuttyPrivateKey implements PvtTextEncoding {
   //----------------------------------------------------------------
   /// Default constructor
   ///
-  /// Create a Putty Private Key object. This is usually used when the program
+  /// Create a PuTTY Private Key object. This is usually used when the program
   /// has a public-key pair and wants to export it in the PPK format.
   /// Use this constructor to create the object and then invoke [encode] on it.
   ///
@@ -60,7 +60,7 @@ class PuttyPrivateKey implements PvtTextEncoding {
   /// value. Any whitespace at the start of the string is skipped.
 
   PuttyPrivateKey.decode(String str, {int offset = 0}) {
-    // The Putty Private Key format is documented in "sshpubk.c" from the
+    // The PuTTY Private Key format is documented in "sshpubk.c" from the
     // Putty source code.
 
     if (offset < 0) {

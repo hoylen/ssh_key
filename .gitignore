@@ -5,3 +5,5 @@
 
 # Dart package: do not commit the pubspec.lock file
 pubspec.lock
+
+example/output
