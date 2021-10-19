@@ -1,19 +1,41 @@
 part of ssh_key_bin;
 
 //################################################################
-/// PKCS #1 representation of an RSA public key.
+/// PKCS #1 version 2.0 representation of an RSA public key.
 ///
-/// Its encoding is defined in section 11.1.1 of
-/// [RFC 2437](https://tools.ietf.org/html/rfc2437#section-11.1.1), which
-/// has been obsoleted by
-/// [RFC 3447](https://tools.ietf.org/html/rfc3447#appendix-A.1.1).
+/// This class can be used to:
+///
+/// - Decode a sequence of bytes into the parameters for an RSA public key
+///   using the [decode] constructor; or
+/// - Encode the parameters for an RSA public key into a sequence of bytes
+///   using the [encode] method.
+///
+/// The RSA public key parameters are the [modulus] and the public [exponent].
+///
+/// ## Format
+///
+/// This binary format is defined in
+/// [RFC 2437](https://datatracker.ietf.org/doc/html/rfc2437#section-11.1.1)
+/// _PKCS #1: RSA Cryptography Specifications, Version 2.0_
+/// by this ASN.1 type:
 ///
 /// ```
 /// RSAPublicKey ::= SEQUENCE {
-///     modulus           INTEGER,  -- n
-///     publicExponent    INTEGER   -- e
+///   modulus           INTEGER,  -- n
+///   publicExponent    INTEGER   -- e
 /// }
 /// ```
+///
+/// Where:
+///
+/// - modulus is the RSA modulus n.
+/// - publicExponent is the RSA public exponent e.
+///
+/// The ASN.1 type is identical in PKCS #1 version 1.5, PKCS #1 version 2.1 and
+/// PKCS #1 version 2.2.
+///
+/// PKCS #1 version 2.0 is referenced, because that is the version
+/// implemented by [Pkcs1RsaPrivateKey].
 
 class Pkcs1RsaPublicKey implements BinaryFormat {
   //================================================================
@@ -80,11 +102,11 @@ class Pkcs1RsaPublicKey implements BinaryFormat {
 
   /// RSA modulus
 
-  late BigInt modulus;
+  late final BigInt modulus;
 
   /// RSA exponent
 
-  late BigInt exponent;
+  late final BigInt exponent;
 
   /// Source this was decoded from.
   ///

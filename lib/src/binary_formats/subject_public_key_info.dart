@@ -17,16 +17,24 @@ part of ssh_key_bin;
 /// This format is used in conjunction with the
 /// RFC 7468 textual encoding (sometimes imprecisely referred to as "PEM").
 ///
-/// The _SubjectPublicKeyInfo_ is defined in X.509: section 4.1 of
-/// [RFC 2459](https://tools.ietf.org/html/rfc2459#section-4.1).
+/// ## Format
+///
+/// This binary format is defined in
+/// [RFC 2459](https://tools.ietf.org/html/rfc2459#section-4.1)
+/// _Internet X.509 Public Key Infrastructure Certificate and CRL Profile_
+/// by this ASN.1 type:
 ///
 /// ```
 /// SubjectPublicKeyInfo  ::=  SEQUENCE  {
 ///     algorithm            AlgorithmIdentifier,
 ///     subjectPublicKey     BIT STRING  }
 /// ```
-/// The _AlgorithmIdentifier_ is defined in section 4.1.1.2 of
+///
+/// The _AlgorithmIdentifier_ is defined in
 /// [RFC 5280](https://tools.ietf.org/html/rfc5280#section-4.1.1.2)
+/// _Internet X.509 Public Key Infrastructure Certificate and Certificate
+/// Revocation List (CRL) Profile_
+/// by this ASN.1 type:
 ///
 /// ```
 /// AlgorithmIdentifier  ::=  SEQUENCE  {
@@ -36,7 +44,9 @@ part of ssh_key_bin;
 ///
 /// The bit string contents of the _subjectPublicKey_ depend on the algorithm
 /// used, and are defined in
-/// [RFC 3279](https://tools.ietf.org/html/rfc3279#section-2.3).
+/// [RFC 3279](https://tools.ietf.org/html/rfc3279#section-2.3)
+/// _Algorithms and Identifiers for the Internet X.509 Public Key Infrastructure
+/// Certificate and Certificate Revocation List (CRL) Profile_.
 ///
 /// Note: this class decodes from, and encodes to, binary data. That binary
 /// data is usually decoded from text, or encoded to text, using

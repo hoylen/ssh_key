@@ -1,7 +1,10 @@
 part of ssh_key_bin;
 
 //################################################################
-/// Base class for all binary formats.
+/// Abstract base class for all binary formats.
+///
+/// All binary formats have an [encode] method to encode the object into a
+/// sequence of bytes.
 
 //ignore: one_member_abstracts
 abstract class BinaryFormat {

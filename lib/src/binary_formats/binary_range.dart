@@ -8,9 +8,23 @@ part of ssh_key_bin;
 /// are processed, they are removed from the range by incrementing the _begin_
 /// index.
 ///
+/// The bytes excludes the bytes that are before the _begin_ offset, and
+/// also excludes the bytes at or after the _end_ offset.
+///
 /// The binary range maintains a reference to the bytes. It does not make a copy
 /// of them. Therefore, the program should not modify the bytes until after the
 /// binary range is no longer needed.
+///
+/// Methods are available to remove bytes from the beginning of the binary
+/// range, for values that are represented by a 32-bit unsigned length
+/// (i.e. 4 bytes) followed by that number of bytes for the value:
+/// - [nextBinary] - sequence of bytes
+/// - [nextMPInt] - multiple precision integer (BigInt)
+/// - [nextString] - sequence of bytes interpreted as a UTF-8 encoded string
+/// - [nextUint32] - big-ending 32-bit unsigned integer
+///
+/// And [nextRawBytes] used to specify the number of bytes to remove
+/// (unlike _nextBinary_ which obtains that number from the first 4 bytes).
 
 class BinaryRange {
   //================================================================
@@ -37,7 +51,9 @@ class BinaryRange {
   /// Creates a new binary range with the same values as another binary range.
   ///
   /// The two ranges can then be used to process the bytes independently of
-  /// each other. That is, the maintain separate _begin_ offsets. Both ranges
+  /// each other. That is, they maintain separate _begin_ offsets.
+  ///
+  /// This does not make a copy of the bytes that are referenced. Both ranges
   /// still share the same underlying bytes, so the bytes should not be modified
   /// until both ranges are no longer needed.
 

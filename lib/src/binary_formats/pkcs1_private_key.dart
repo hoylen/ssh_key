@@ -1,9 +1,66 @@
 part of ssh_key_bin;
 
 //################################################################
-/// PKCS #1 representation of an RSA private key.
+/// PKCS #1 version 2.0 representation of an RSA private key.
 ///
-/// https://tools.ietf.org/html/rfc2437#section-11.1.2
+/// This class can be used to:
+///
+/// - Decode a sequence of bytes into the parameters for an RSA private key
+///   using the [decode] constructor; or
+/// - Encode the parameters for an RSA private key into a sequence of bytes
+///   using the [encode] method.
+///
+/// This class only exposes the [modulus], [privateExponent], [prime1] and
+/// [prime2] RSA parameters, even though the binary format includes other
+/// parameters.
+///
+/// ## Format
+///
+/// This binary format is defined in
+/// [RFC 2437](https://tools.ietf.org/html/rfc2437#section-11.1.2)
+/// _PKCS #1: RSA Cryptography Specifications, Version 2.0_
+/// by this ASN.1 type:
+///
+/// ```text
+/// RSAPrivateKey ::= SEQUENCE {
+///   version Version,
+///   modulus INTEGER, -- n
+///   publicExponent INTEGER, -- e
+///   privateExponent INTEGER, -- d
+///   prime1 INTEGER, -- p
+///   prime2 INTEGER, -- q
+///   exponent1 INTEGER, -- d mod (p-1)
+///   exponent2 INTEGER, -- d mod (q-1)
+///   coefficient INTEGER -- (inverse of q) mod p }
+///
+/// Version ::= INTEGER
+/// ```
+/// Where:
+///
+/// - version is the version number, for compatibility with future
+//    revisions of this document. It shall be 0 for RFC 2437.
+/// - modulus is the modulus n.
+/// - publicExponent is the public exponent e.
+/// - privateExponent is the private exponent d.
+/// - prime1 is the prime factor p of n.
+/// - prime2 is the prime factor q of n.
+/// - exponent1 is d mod (p-1).
+/// - exponent2 is d mod (q-1).
+/// - coefficient is the Chinese Remainder Theorem coefficient q-1 mod p.
+///
+/// This implementation only supports a value of 0 for the _version_ object.
+///
+/// The ASN.1 type is identical in PKCS #1 version 1.5
+/// ([RFC 2313](https://datatracker.ietf.org/doc/html/rfc2313#section-7.2)).
+///
+/// Version of PKCS #1 newer than version 2.0 are not supported.
+/// The ASN.1 type in PKCS #1 version 2.1
+/// ([RFC 3447](https://datatracker.ietf.org/doc/html/rfc3447#appendix-A.1.2))
+/// and PKCS #1 version 2.2
+/// ([RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017#appendix-A.1.2))
+/// are identified by a value of 1 for the _version_ object.
+/// The _decode_ constructor will throw an exception if the value of the
+/// _version_ object is not 0.
 
 class Pkcs1RsaPrivateKey implements BinaryFormat {
   //================================================================
@@ -29,10 +86,9 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
     _exponent2 = privateExponent % (prime2 - BigInt.one);
     _coefficient = prime2.modInverse(prime1);
 
-    try {
-      check(); // may fail if parameters were inconsistent
-    } on FormatException catch (e) {
-      throw ArgumentError(e.message);
+    final notCorrect = _isCorrect();
+    if (notCorrect != null) {
+      throw ArgumentError(notCorrect);
     }
   }
 
@@ -54,41 +110,13 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
       }
 
       if (objects.length != 1) {
-        throw _Pkcs1Msg(
-            'ASN.1 encoding has incorrect number of objects (expecting 1, got ${objects.length})');
+        throw _Pkcs1Msg('ASN.1 encoding has an incorrect number of objects'
+            ' (expecting 1, got ${objects.length})');
       }
 
       final topSequence = objects.first;
       if (topSequence is ASN1Sequence) {
         const _numberOfIntegers = 9;
-
-        // From <https://datatracker.ietf.org/doc/html/rfc8017#appendix-A.1.2>
-        //
-        // RSAPrivateKey ::= SEQUENCE {
-        //   version           Version,
-        //   modulus           INTEGER,  -- n
-        //   publicExponent    INTEGER,  -- e
-        //   privateExponent   INTEGER,  -- d
-        //   prime1            INTEGER,  -- p
-        //   prime2            INTEGER,  -- q
-        //   exponent1         INTEGER,  -- d mod (p-1)
-        //   exponent2         INTEGER,  -- d mod (q-1)
-        //   coefficient       INTEGER,  -- (inverse of q) mod p
-        //   otherPrimeInfos   OtherPrimeInfos OPTIONAL
-        // }
-        //
-        // otherPrimeInfos contains the information for the additional primes
-        // r_3, ..., r_u, in order.  It SHALL be omitted if version is 0 and
-        // SHALL contain at least one instance of OtherPrimeInfo if version
-        // is 1.
-        //
-        // OtherPrimeInfos ::= SEQUENCE SIZE(1..MAX) OF OtherPrimeInfo
-        //
-        // OtherPrimeInfo ::= SEQUENCE {
-        //   prime             INTEGER,  -- ri
-        //   exponent          INTEGER,  -- di
-        //   coefficient       INTEGER   -- ti
-        // }
 
         if (topSequence.elements.length != _numberOfIntegers &&
             topSequence.elements.length != _numberOfIntegers + 1) {
@@ -97,7 +125,7 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
               ' (expecting $expecting, got ${topSequence.elements.length})');
         }
 
-        // Check the mandatory members of the sequence are ASN.1 Integers
+        // Check the mandatory objects in the sequence are ASN.1 Integers
 
         final values = <BigInt>[];
 
@@ -129,15 +157,18 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
         _coefficient = values[i++];
         assert(i == _numberOfIntegers);
 
-        // Check the values are sane
+        // Check the values are sane (including whether version == 0)
 
-        try {
-          check();
-        } on FormatException catch (e) {
-          throw _Pkcs1Msg(e.message);
+        final notCorrect = _isCorrect();
+        if (notCorrect != null) {
+          throw _Pkcs1Msg(notCorrect);
         }
+
         if (_numberOfIntegers < topSequence.elements.length) {
-          // otherPrimeInfos is prohibited for version 0
+          // version=0 does not have any other objects in the sequence.
+          //
+          // version==1 can have an additional "otherPrimeInfos" object, but
+          // this implementation currently does not support version==1.
           throw _Pkcs1Msg('ASN.1 sequence has unexpected item');
         }
 
@@ -162,39 +193,39 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
   ///
   /// Only version 0 is supported.
 
-  late BigInt _version;
+  late final BigInt _version;
 
   /// RSA modulus (n)
 
-  late BigInt modulus;
+  late final BigInt modulus;
 
   /// RSA public exponent (e)
 
-  late BigInt _publicExponent;
+  late final BigInt _publicExponent;
 
   /// RSA private exponent (d)
 
-  late BigInt privateExponent;
+  late final BigInt privateExponent;
 
   /// Prime 1 (p)
 
-  late BigInt prime1;
+  late final BigInt prime1;
 
   /// Prime 2 (q)
 
-  late BigInt prime2;
+  late final BigInt prime2;
 
   /// Exponent 1 = d mod (p-1)
 
-  late BigInt _exponent1;
+  late final BigInt _exponent1;
 
   /// Exponent 2 = d mod (q-1)
 
-  late BigInt _exponent2;
+  late final BigInt _exponent2;
 
   /// Coefficient = (inverse of q) mod p
 
-  late BigInt _coefficient;
+  late final BigInt _coefficient;
 
   /// Source this was decoded from.
   ///
@@ -208,8 +239,10 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
 
   //----------------------------------------------------------------
   /// Check values are consistent.
+  ///
+  /// Returns null if they are correct or an error message if they are not.
 
-  void check() {
+  String? _isCorrect() {
     if (_version != BigInt.zero) {
       throw FormatException('unexpected version $_version');
     }
@@ -219,8 +252,6 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
     if (modulus != prime1 * prime2) {
       throw FormatException('invalid modulus'); // n = p * q
     }
-
-    // TODO: calculate private exponent & public exponent from first principles
 
     final phi = (prime1 - BigInt.one) * (prime2 - BigInt.one);
 

@@ -3,13 +3,42 @@ part of ssh_key_bin;
 //################################################################
 /// Represents the OpenSSH private key format.
 ///
-/// This is proprietary format that is not documented.
+/// ## Format
 ///
-/// Unofficial documentation on this format can be found in A. J. O'Neal's
-/// blog post on
+/// This is proprietary format that is not been officially documented.
+///
+/// Unofficial documentation can be found in a blog post on
 /// [The OpenSSH Private Key Format](https://coolaj86.com/articles/the-openssh-private-key-format/).
+/// by A. J. O'Neal, which says the format is:
 ///
+/// ```text
+/// "openssh-key-v1"0x00    # NULL-terminated "Auth Magic" string
+/// 32-bit length, "none"   # ciphername length and string
+/// 32-bit length, "none"   # kdfname length and string
+/// 32-bit length, nil      # kdf (0 length, no kdf)
+/// 32-bit 0x01             # number of keys, hard-coded to 1 (no length)
+/// 32-bit length, sshpub   # public key in ssh format
+///     32-bit length, keytype
+///     32-bit length, pub0
+///     32-bit length, pub1
+/// 32-bit length for rnd+prv+comment+pad
+///     64-bit dummy checksum?  # a random 32-bit int, repeated
+///     32-bit length, keytype  # the private key (including public)
+///     32-bit length, pub0     # Public Key parts
+///     32-bit length, pub1
+///     32-bit length, prv0     # Private Key parts
+///     ...                     # (number varies by type)
+///     32-bit length, comment  # comment string
+///     padding bytes 0x010203  # pad to blocksize (see notes below)
+/// ```
 ///
+/// More details are in the blog post.
+///
+/// The most correct source of information on this format is the
+/// [OpenSSH source code](https://www.openssh.com/ftp.html#http)
+/// or from the
+/// [Portable OpenSSH](https://github.com/openssh/openssh-portable/blob/master/sshkey.c)
+/// fork of it.
 
 class OpenSshPrivateKey implements BinaryFormat {
   //================================================================
