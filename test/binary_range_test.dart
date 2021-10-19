@@ -180,7 +180,8 @@ void testMPInt() {
             BinaryRange(Uint8List.fromList(badBytes)).nextMPInt();
             fail('did not throw exception');
           } on KeyBad catch (e) {
-            expect(e.message, equals('data incomplete'));
+            expect(e.message, startsWith('data incomplete (for '));
+            expect(e.message, endsWith(' byte MPint)'));
           }
         });
       });
@@ -241,7 +242,7 @@ void testString() {
               .nextString();
           fail('did not throw exception');
         } on KeyBad catch (e) {
-          expect(e.message, equals('data incomplete'));
+          expect(e.message, equals('data incomplete (for 1 byte string)'));
         }
       });
     });
@@ -267,7 +268,14 @@ void testBinary() {
             BinaryRange(Uint8List.fromList(incompleteData)).nextBinary();
             fail('did not throw exception');
           } on KeyBad catch (e) {
-            expect(e.message, equals('data incomplete'));
+            if (incompleteData.length < 4) {
+              // Could not even get the length
+              expect(e.message,
+                  equals('data incomplete (for 32-bit unsigned integer)'));
+            } else {
+              expect(e.message, startsWith('data incomplete (for '));
+              expect(e.message, endsWith(' byte binary data)'));
+            }
           }
         });
       }
@@ -289,7 +297,8 @@ void testUint32() {
             BinaryRange(Uint8List.fromList(incompleteData)).nextUint32();
             fail('did not throw exception');
           } on KeyBad catch (e) {
-            expect(e.message, equals('data incomplete'));
+            expect(e.message,
+                equals('data incomplete (for 32-bit unsigned integer)'));
           }
         });
       }

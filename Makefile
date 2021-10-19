@@ -2,13 +2,14 @@
 
 DIST_DIR=dist
 
-.PHONY: help dartfmt dartdoc
+.PHONY: test clean help dartfmt dartdoc
 
 help:
 	@echo "Make targets:"
-	@echo "  format   reformat code"
-	@echo "  dartdoc  generate documentation"
-	@echo "  clean    delete generated files"
+	@echo "  format  reformat code"
+	@echo "  doc     generate Dart documentation"
+	@echo "  test    run unit tests and example tests"
+	@echo "  clean   delete generated files"
 
 # ssh-keygen -t rsa -b 2048 -f rsa2048
 # ssh-keygen -t rsa -b 4096 -f rsa4096
@@ -27,10 +28,20 @@ format:
 
 # Dart source code documentation
 
-dartdoc:
+dartdoc: doc
+
+doc:
 	@dartdoc --output "${DIST_DIR}/doc/code"
 	@echo "View Dart documentation by opening: ${DIST_DIR}/doc/code/index.html"
 
+#----------------------------------------------------------------
+# Testing
+
+test:
+	@dart run test
+	@echo
+	@example/tests-run.sh all
 
 clean:
-	rm -rf "${DIST_DIR}"
+	@rm -rf "${DIST_DIR}"
+	@rm -rf "example/output"

@@ -4,6 +4,7 @@
 
 - Support for unencrypted PKCS#1 private keys.
 - Fixed parsing bug when there is no comment in an OpenSSH public key.
+- Made members of BinaryRange private.
 
 ## 0.7.1
 

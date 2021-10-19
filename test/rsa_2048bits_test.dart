@@ -477,13 +477,14 @@ void badParse(String title, String str, String expectedMessage,
       }
     } on KeyBad catch (e) {
       if (!noKey) {
-        expect(e.message, equals(expectedMessage));
+        expect(e.message, equals(expectedMessage), reason: 'noKey: $title');
       } else {
         fail('KeyBad thrown when expecting a different exception');
       }
     } on KeyUnsupported catch (e) {
       if (unsupported) {
-        expect(e.message, equals(expectedMessage));
+        expect(e.message, equals(expectedMessage),
+            reason: 'unsupported: $title');
       } else {
         fail('KeyUnsupported thrown when expecting a different exception');
       }
@@ -670,7 +671,7 @@ void groupPublicDecode() {
 
       // expect(base64.encode(chunk), equals('AAAAASo='));
 
-      badParse('empty string', '', 'no key found', noKey: true);
+      badParse('empty string', '', 'no public key found', noKey: true);
       badParse('no data', 'ssh-rsa', 'OpenSSH Public Key: key-type missing');
       badParse('no data, has space', 'ssh-rsa ',
           'OpenSSH Public Key: base64 missing');
@@ -680,11 +681,11 @@ void groupPublicDecode() {
 
       // ssh-rsa expects exactly 3 chunks
 
-      badParse(
-          'one chunk', '$alg ${base64.encode(algChunk)}', 'data incomplete');
+      badParse('one chunk', '$alg ${base64.encode(algChunk)}',
+          'data incomplete (for 32-bit unsigned integer)');
 
       badParse('two chunks', '$alg ${base64.encode(algChunk + chunk)}',
-          'data incomplete');
+          'data incomplete (for 32-bit unsigned integer)');
 
       badParse(
           'four chunks',

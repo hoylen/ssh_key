@@ -127,7 +127,7 @@ class BinaryRange {
       throw KeyBad('length is negative');
     }
     if (_end < _begin + length) {
-      throw KeyBad('data incomplete');
+      throw KeyBad('data incomplete (for $length bytes)');
     }
 
     final result = _bytes.sublist(_begin, _begin + length);
@@ -148,7 +148,7 @@ class BinaryRange {
   int nextUint32() {
     if (_end < _begin + 4) {
       // Less than 4 bytes left: not enough for a 32-bit value
-      throw KeyBad('data incomplete');
+      throw KeyBad('data incomplete (for 32-bit unsigned integer)');
     }
 
     final a = Uint8List.fromList([
@@ -184,7 +184,7 @@ class BinaryRange {
     final length = nextUint32();
 
     if (_end < _begin + length) {
-      throw KeyBad('data incomplete');
+      throw KeyBad('data incomplete (for $length byte binary data)');
     }
 
     final result = BinaryRange(_bytes, begin: _begin, end: _begin + length);
@@ -216,7 +216,7 @@ class BinaryRange {
     final length = nextUint32();
 
     if (_end < _begin + length) {
-      throw KeyBad('data incomplete for string of $length bytes');
+      throw KeyBad('data incomplete (for $length byte string)');
     }
 
     final rawString = _bytes.sublist(_begin, _begin + length);
@@ -288,7 +288,7 @@ class BinaryRange {
 
       return (negative) ? n - BigInt.two.pow((8 * length) - 1) : n;
     } else {
-      throw KeyBad('data incomplete');
+      throw KeyBad('data incomplete (for $length byte MPint)');
     }
   }
 }
