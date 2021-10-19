@@ -107,9 +107,7 @@ class OpenSshPrivateKey implements BinaryFormat {
     final kdfName = br.nextString();
 
     final kdfRange = br.nextBinary();
-    final kdf = (kdfRange.isEmpty)
-        ? Uint8List(0)
-        : kdfRange.nextRawBytes(kdfRange.end - kdfRange.begin);
+    final kdf = kdfRange.allRawBytes();
     assert(kdfRange.isEmpty);
 
     final numberOfKeys = br.nextUint32();

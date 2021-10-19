@@ -3,28 +3,28 @@ part of ssh_key_bin;
 //################################################################
 /// Helper class for decoding binary data.
 ///
-/// A binary range is a sequence of bytes to be decoded. A contiguous range from
-/// the [bytes] is tracked by the [begin] and [end] indexes into it. As bytes
-/// are processed, they are removed from the range by incrementing the _begin_
-/// index.
-///
-/// The bytes excludes the bytes that are before the _begin_ offset, and
-/// also excludes the bytes at or after the _end_ offset.
+/// A binary range represents a sequence of bytes to be decoded. As bytes
+/// are processed, they are removed from the beginning of the sequence.
 ///
 /// The binary range maintains a reference to the bytes. It does not make a copy
 /// of them. Therefore, the program should not modify the bytes until after the
 /// binary range is no longer needed.
 ///
 /// Methods are available to remove bytes from the beginning of the binary
-/// range, for values that are represented by a 32-bit unsigned length
-/// (i.e. 4 bytes) followed by that number of bytes for the value:
+/// range.
+///
+/// For length-value pairs, which are represented by a 32-bit unsigned length
+/// (i.e. four bytes) followed by that number of bytes for the value:
 /// - [nextBinary] - sequence of bytes
 /// - [nextMPInt] - multiple precision integer (BigInt)
 /// - [nextString] - sequence of bytes interpreted as a UTF-8 encoded string
 /// - [nextUint32] - big-ending 32-bit unsigned integer
 ///
-/// And [nextRawBytes] used to specify the number of bytes to remove
-/// (unlike _nextBinary_ which obtains that number from the first 4 bytes).
+/// For removing a sequence of bytes (without using the next four bytes as the
+/// length), use [nextRawBytes] or [allRawBytes].
+///
+/// The amount of bytes remaining can be determined using
+/// [isEmpty], [isNotEmpty] and [length].
 
 class BinaryRange {
   //================================================================
@@ -43,9 +43,10 @@ class BinaryRange {
   /// The _bytes_ are not copied, so the program should not change the data
   /// while the binary range is in use.
 
-  BinaryRange(this.bytes, {int? begin, int? end})
-      : begin = begin ?? 0,
-        end = end ?? bytes.length;
+  BinaryRange(Uint8List bytes, {int? begin, int? end})
+      : _bytes = bytes,
+        _begin = begin ?? 0,
+        _end = end ?? bytes.length;
 
   //----------------------------------------------------------------
   /// Creates a new binary range with the same values as another binary range.
@@ -58,9 +59,9 @@ class BinaryRange {
   /// until both ranges are no longer needed.
 
   BinaryRange.copy(BinaryRange original)
-      : bytes = original.bytes,
-        begin = original.begin,
-        end = original.end;
+      : _bytes = original._bytes,
+        _begin = original._begin,
+        _end = original._end;
 
   //================================================================
   // Members
@@ -68,36 +69,36 @@ class BinaryRange {
   //----------------------------------------------------------------
   /// The underlying data in the binary range.
 
-  Uint8List bytes;
+  final Uint8List _bytes;
 
   /// The offset into the _bytes_ for the start of the binary range.
   ///
   /// This value will always be greater than or equal to zero, and less than or
-  /// equal to the [end].
+  /// equal to the [_end].
 
-  int begin;
+  int _begin;
 
   /// The offset into the _bytes_ for the end of the binary range.
   ///
   /// This value will always be greater than or equal to zero, and less than or
   /// equal to the total length of the underlying _bytes_.
 
-  int end;
+  final int _end;
 
   //================================================================
   // Methods
 
   /// Tests if there are one or more bytes in the range.
 
-  bool get isNotEmpty => (begin < end);
+  bool get isNotEmpty => (_begin < _end);
 
   /// Tests if there are zero bytes in the range.
 
-  bool get isEmpty => (end <= begin);
+  bool get isEmpty => (_end <= _begin);
 
   /// Number of bytes in the range.
 
-  int get length => (end - begin);
+  int get length => (_end - _begin);
 
   /// Returns a copy of all the bytes in the range.
   ///
@@ -107,7 +108,7 @@ class BinaryRange {
   /// Unlike the extract methods, the binary range is not changed by this
   /// operation.
 
-  Uint8List allRawBytes() => bytes.sublist(begin, end);
+  Uint8List allRawBytes() => _bytes.sublist(_begin, _end);
 
   //================================================================
   // Decoding methods
@@ -125,13 +126,13 @@ class BinaryRange {
     if (length < 0) {
       throw KeyBad('length is negative');
     }
-    if (end < begin + length) {
+    if (_end < _begin + length) {
       throw KeyBad('data incomplete');
     }
 
-    final result = bytes.sublist(begin, begin + length);
+    final result = _bytes.sublist(_begin, _begin + length);
 
-    begin += length;
+    _begin += length;
 
     return result;
   }
@@ -145,16 +146,20 @@ class BinaryRange {
   /// Throws a BadEncoding if there are insufficient bytes in the range.
 
   int nextUint32() {
-    if (end < begin + 4) {
+    if (_end < _begin + 4) {
       // Less than 4 bytes left: not enough for a 32-bit value
       throw KeyBad('data incomplete');
     }
 
-    final a = Uint8List.fromList(
-        [bytes[begin + 3], bytes[begin + 2], bytes[begin + 1], bytes[begin]]);
+    final a = Uint8List.fromList([
+      _bytes[_begin + 3],
+      _bytes[_begin + 2],
+      _bytes[_begin + 1],
+      _bytes[_begin]
+    ]);
     final value = a.buffer.asUint32List().first;
 
-    begin += 4;
+    _begin += 4;
 
     return value;
   }
@@ -178,13 +183,13 @@ class BinaryRange {
   BinaryRange nextBinary() {
     final length = nextUint32();
 
-    if (end < begin + length) {
+    if (_end < _begin + length) {
       throw KeyBad('data incomplete');
     }
 
-    final result = BinaryRange(bytes, begin: begin, end: begin + length);
+    final result = BinaryRange(_bytes, begin: _begin, end: _begin + length);
 
-    begin += length;
+    _begin += length;
 
     return result;
   }
@@ -210,12 +215,12 @@ class BinaryRange {
   String nextString({Encoding encoding = utf8}) {
     final length = nextUint32();
 
-    if (end < begin + length) {
+    if (_end < _begin + length) {
       throw KeyBad('data incomplete for string of $length bytes');
     }
 
-    final rawString = bytes.sublist(begin, begin + length);
-    begin += length;
+    final rawString = _bytes.sublist(_begin, _begin + length);
+    _begin += length;
 
     return encoding.decode(rawString);
   }
@@ -250,23 +255,23 @@ class BinaryRange {
     if (length == 0) {
       // Zero is always represented by no bytes.
       return BigInt.zero;
-    } else if (begin + length <= end) {
+    } else if (_begin + length <= _end) {
       // Length is correct
 
       // Process first byte
 
-      final firstByte = bytes[begin];
+      final firstByte = _bytes[_begin];
       final negative = (firstByte & 0x80) != 0; // 1 MSB from first byte
       var n = BigInt.from(firstByte & 0x7F); // other 7 LSB from first byte
-      begin++; // skip first byte
+      _begin++; // skip first byte
 
-      if (begin == end) {
+      if (_begin == _end) {
         if (n == BigInt.zero && !negative) {
           // Zero must be represented by no bytes
           throw KeyBad('invalid mpint');
         }
       } else {
-        final secondByte = bytes[begin];
+        final secondByte = _bytes[_begin];
         if (firstByte == 0x00 && (secondByte & 0x80 == 0x00) ||
             firstByte == 0xFF && (secondByte & 0x80 == 0x80)) {
           // Unnecessary leading bytes with 0 or 255 MUST NOT be included.
@@ -276,7 +281,7 @@ class BinaryRange {
       // Process remaining bytes
 
       for (var i = 1; i < length; i++) {
-        n = (n << 8) | BigInt.from(bytes[begin++]);
+        n = (n << 8) | BigInt.from(_bytes[_begin++]);
       }
 
       // Return value (two's complement for negative numbers)
