@@ -31,7 +31,7 @@ format:
 dartdoc: doc
 
 doc:
-	@dartdoc --output "${DIST_DIR}/doc/code"
+	@dart doc --output-dir "${DIST_DIR}/doc/code" `pwd`
 	@echo "View Dart documentation by opening: ${DIST_DIR}/doc/code/index.html"
 
 #----------------------------------------------------------------
