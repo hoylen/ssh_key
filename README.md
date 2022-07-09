@@ -36,11 +36,31 @@ These **public key** formats are supported:
   incorrectly refers to this as "PKCS #8"; the real PKCS #8 is a
   format for representing a _private_ key)
 
+Examples of these can be found at the end of this page.
+
 ### Public-key algorithms
 
-This public-key algorithm is supported:
+#### RSA
 
-- RSA
+The RSA public-key algorithm is fully supported.
+
+RSA public keys can be parsed from, and encoded to, any of the above formats.
+
+#### Generic OpenSSH Public Keys format
+
+Any public keys in the OpenSSH Public Key format (the single-line
+format) are also supported. But the information in them are treated as
+binary data. Only RSA public keys are fully parsed into the values
+represented by the public key.
+
+These public keys can be parsed into a _GenericPublicKey_ object,
+where the data is only available as a sequence of bytes. But the
+library is not able to extract the ed25519 parameters from those
+bytes.
+
+Therefore, the library can be used to store these public key, and to
+perform some syntax checks on it.  But the library cannot be used to
+perform cryptographic operations with the public key.
 
 ## Example
 
@@ -262,7 +282,7 @@ void main(List<String> args) {
 
 ## Know limitations
 
-- Only RSA keys are supported.
+- Only RSA keys are fully supported.
 
 - Requires Dart 2.7.0 or later, because it uses Dart _extension
   methods_ to make the _encode_ method available on the Pointy
@@ -289,6 +309,82 @@ _Note: support for other formats is limited by the lack of
 documentation about the format (since they are often proprietary).
 Support for other types of keys is limited by the implementation of
 other cryptographic algorithms in Dart._
+
+
+## Format examples
+
+### OpenSSH Public Key
+
+Single-line format used by older versions of OpenSSH.
+
+```
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDYwd6O4Z+STMxTlFCPcN8VAq9ZNKvaQRYbsEDKK0ydvTxdwt72xRo8supYX1vgDgRpYBhgDy8OPEMLDuk61sXRdbTITFW1B98rUsvvLEYHM4wJQnkWZvcyZz79id2H3r75ow+EL6SF4zxrSnJ9Ax09cKN2oM3nQUn0jkaqG4Hb/thbKbF8SzevBrcI0Ld4K64Mduc2XQbW2qMikT4xPBtu7bwPuP1XhipZOBcCBnXdrWCZk6pfYtA/aq5En7a2JAyglIpEsAIbtSVmj62BgstmSOy/4tQjVinh6IG8y8ixq59GbmC8KP9zUQ3hhLfT/nqreXpeh039cotUTWJHyVOB user@example.com'
+```
+
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHlm47YRgXlI/6nKEdV6RuXEBLDFdJTfvb/pPEgO6/FE
+```
+
+```
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLSZ2G4sjk7qtIVlgx9AZsl3XZtgci0kK54Nef6xxwqas5V3v37DkgIKbER+Yx6GQ7VL3qrfha1pSLmn04qUQg4=
+```
+
+This format is used in _~/.ssh/known_hosts_ and
+_~/.ssh/authorized_keys_ files.
+
+### SSH Public Key
+
+Defined by RFC 4716 and used by newer versions of OpenSSH.
+
+```text
+---- BEGIN SSH2 PUBLIC KEY ----
+Comment: "user@example.com"
+AAAAB3NzaC1yc2EAAAADAQABAAABAQDYwd6O4Z+STMxTlFCPcN8VAq9ZNKvaQRYbsEDKK0
+ydvTxdwt72xRo8supYX1vgDgRpYBhgDy8OPEMLDuk61sXRdbTITFW1B98rUsvvLEYHM4wJ
+QnkWZvcyZz79id2H3r75ow+EL6SF4zxrSnJ9Ax09cKN2oM3nQUn0jkaqG4Hb/thbKbF8Sz
+evBrcI0Ld4K64Mduc2XQbW2qMikT4xPBtu7bwPuP1XhipZOBcCBnXdrWCZk6pfYtA/aq5E
+n7a2JAyglIpEsAIbtSVmj62BgstmSOy/4tQjVinh6IG8y8ixq59GbmC8KP9zUQ3hhLfT/n
+qreXpeh039cotUTWJHyVOB
+---- END SSH2 PUBLIC KEY ----
+```
+
+Note: the encapsulation boundary lines have four hyphens and spaces,
+unlike the _textual encoding_ format which have five hyphens and no
+spaces.
+
+### Textual encoding of PKCS #1
+
+OpenSSH calls this "PEM" (which is an ambiguous term, since PEM is a
+textual encoding that is used for many types of data: public keys,
+private keys, certificates, etc.).
+
+```
+-----BEGIN RSA PUBLIC KEY-----
+MIIBCgKCAQEA2MHejuGfkkzMU5RQj3DfFQKvWTSr2kEWG7BAyitMnb08XcLe9sUa
+PLLqWF9b4A4EaWAYYA8vDjxDCw7pOtbF0XW0yExVtQffK1LL7yxGBzOMCUJ5Fmb3
+Mmc+/Yndh96++aMPhC+kheM8a0pyfQMdPXCjdqDN50FJ9I5GqhuB2/7YWymxfEs3
+rwa3CNC3eCuuDHbnNl0G1tqjIpE+MTwbbu28D7j9V4YqWTgXAgZ13a1gmZOqX2LQ
+P2quRJ+2tiQMoJSKRLACG7UlZo+tgYLLZkjsv+LUI1Yp4eiBvMvIsaufRm5gvCj/
+c1EN4YS30/56q3l6XodN/XKLVE1iR8lTgQIDAQAB
+-----END RSA PUBLIC KEY-----
+```
+
+### Textual encoding of subjectPublicKeyInfo from X.509
+
+OpenSSH incorrectly refers to this as "PKCS #8"; the real PKCS #8 is a
+format for representing a _private_ key.
+
+```
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2MHejuGfkkzMU5RQj3Df
+FQKvWTSr2kEWG7BAyitMnb08XcLe9sUaPLLqWF9b4A4EaWAYYA8vDjxDCw7pOtbF
+0XW0yExVtQffK1LL7yxGBzOMCUJ5Fmb3Mmc+/Yndh96++aMPhC+kheM8a0pyfQMd
+PXCjdqDN50FJ9I5GqhuB2/7YWymxfEs3rwa3CNC3eCuuDHbnNl0G1tqjIpE+MTwb
+bu28D7j9V4YqWTgXAgZ13a1gmZOqX2LQP2quRJ+2tiQMoJSKRLACG7UlZo+tgYLL
+Zkjsv+LUI1Yp4eiBvMvIsaufRm5gvCj/c1EN4YS30/56q3l6XodN/XKLVE1iR8lT
+gQIDAQAB
+-----END PUBLIC KEY-----
+```
 
 ## Which library to use
 

@@ -663,10 +663,6 @@ void groupPublicDecode() {
       const alg = 'ssh-rsa';
       final algChunk = [0, 0, 0, alg.length] + latin1.encode(alg);
 
-      const wrongAlg = 'ssh-rs';
-      final wrongAlgChunk =
-          [0, 0, 0, wrongAlg.length] + latin1.encode(wrongAlg);
-
       final chunk = [0, 0, 0, 1, 42];
 
       // expect(base64.encode(chunk), equals('AAAAASo='));
@@ -692,20 +688,16 @@ void groupPublicDecode() {
           '$alg ${base64.encode(algChunk + chunk + chunk + chunk)}',
           'unexpected extra data in RSA public key');
 
-      // First chunk must match the algorithm
+      // First chunk must match the algorithm specified by the key-type
+
+      const badAlg = 'Ssh-rsa'; // 'S' instead of 's'
+      final badAlgChunk = [0, 0, 0, badAlg.length] + latin1.encode(badAlg);
+      assert(badAlg != alg);
 
       badParse(
           'algorithm mismatch',
-          '$alg ${base64.encode(wrongAlgChunk + chunk + chunk)}',
+          '$alg ${base64.encode(badAlgChunk + chunk + chunk)}',
           'OpenSSH Public Key: algorithm name mismatch');
-
-      // Unknown algorithm
-
-      badParse(
-          'unknown algorithm',
-          '$wrongAlg ${base64.encode(wrongAlgChunk + chunk + chunk)}',
-          'unsupported key-type: $wrongAlg',
-          unsupported: true);
     }, skip: defaultSkip);
   }, skip: false);
 }

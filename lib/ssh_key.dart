@@ -100,9 +100,10 @@ import 'package:ssh_key/ssh_key_txt.dart';
 
 //----------------------------------------------------------------
 
+part 'src/keys/algorithms/generic.dart';
+part 'src/keys/algorithms/rsa.dart';
 part 'src/keys/enums.dart';
 part 'src/keys/exceptions.dart';
 part 'src/keys/key_private.dart';
 part 'src/keys/key_public.dart';
 part 'src/keys/properties.dart';
-part 'src/keys/rsa.dart';

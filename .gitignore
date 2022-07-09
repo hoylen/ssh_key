@@ -1,9 +1,14 @@
+# Dart and project generated files
+
 .packages
 .dart_tool/
-.idea/
-.DS_Store
+
+coverage
+example/output
 
 # Dart package: do not commit the pubspec.lock file
 pubspec.lock
 
-example/output
+# Files from IDE and operating system
+.idea/
+.DS_Store

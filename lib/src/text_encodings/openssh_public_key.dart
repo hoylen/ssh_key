@@ -52,20 +52,33 @@ class OpenSshPublicKey implements PubTextEncoding {
   /// Decode from text
   ///
   /// The [str] must consist of a line containing:
-  /// - key type
+  /// - key-type
   /// - single space
   /// - base-64 encoded OpenSSH format key
   /// - optional: single space followed by a comment
   ///
-  /// This decoder is less strict and will accept multiple whitespaces where
-  /// a single space is expected. It will also ignore any white space and blank
-  /// lines before the key-type (i.e. the key-type does not have to be at the
-  /// beginning of the line).
+  /// ## Whitespace
+  ///
+  /// This decoder is less strict and will accept multiple whitespaces between
+  /// the key-type and the base-64 encoded data. It will also ignore any
+  /// whitespace and blank lines before the key-type (i.e. the key-type does
+  /// not have to be at the beginning of the line).
+  ///
+  /// But it strictly follows the specification for space for the comment.
+  /// Between the end of the base-64 encoded data and the end of the line:
+  ///
+  /// - No characters: no comment (the [comment] will be null).
+  /// - Single space: comment exists and is the empty string.
+  /// - Two spaces: comment is a string containing one space.
+  /// - Multiple spaces followed by other characters: the comment includes all
+  ///   the spaces except for the first one (e.g if the line ends with
+  ///   "==     xyz", the comment is "    xyz").
+  ///  - Any spaces after the comment is included in the comment.
   ///
   /// https://tools.ietf.org/html/rfc4253#section-6.6
   ///
-  /// Throws a FormatException if the string does not contain correctly encoded
-  /// value. Any whitespace at the start of the string is skipped.
+  /// Throws a [FormatException] if the string does not contain correctly
+  /// encoded value. Any whitespace at the start of the string is skipped.
 
   OpenSshPublicKey.decode(String str, {int offset = 0}) {
     // Skip the key type
@@ -88,28 +101,24 @@ class OpenSshPublicKey implements PubTextEncoding {
     }
 
     final keyTypeStart = p;
-    int? algorithmNameEnd;
+    int? keyTypeEnd;
 
     while (p < str.length) {
       final ch = str[p];
       if (ch == ' ') {
-        if (p != keyTypeStart + 1) {
-          algorithmNameEnd = p;
-          p++;
-          break;
-        } else {
-          break;
-        }
+        keyTypeEnd = p;
+        break;
       } else {
-        p++;
+        p++; // character is a part of the key-type
       }
     }
 
-    if (algorithmNameEnd == null) {
+    if (keyTypeEnd == null) {
+      // Loop ended because end of str was reached, not because space found
       throw KeyBad('OpenSSH Public Key: key-type missing');
     }
 
-    final keyType = str.substring(keyTypeStart, algorithmNameEnd);
+    final keyType = str.substring(keyTypeStart, keyTypeEnd);
 
     // Find start of PEM data (by skipping all whitespace)
 
@@ -135,13 +144,11 @@ class OpenSshPublicKey implements PubTextEncoding {
     // Parse optional comment
 
     if (p == str.length) {
-      // End of string string
-      comment = null; // no comment
-
+      // End of string reached, so there is no comment
+      comment = null;
     } else if (str[p] == '\r' || str[p] == '\n') {
-      // End of the line
-      comment = null; // no comment
-
+      // End of the line reached, so there is no comment
+      comment = null;
     } else if (str[p] == ' ') {
       // There is a space after the base64, so the rest of the line is a comment
 
@@ -199,10 +206,17 @@ class OpenSshPublicKey implements PubTextEncoding {
   // Members
 
   /// Binary data representing the public key.
+  ///
+  /// This starts with the [keyType] (represented as a 32-bit length followed
+  /// by the value) followed by key-type specific bytes.
 
   late Uint8List data;
 
   /// Comment
+  ///
+  /// The optional comment after the base-64 encoded data.
+  ///
+  /// The comment may have leading and trailing whitespace.
   ///
   /// Null if there is no comment.
 
@@ -218,7 +232,17 @@ class OpenSshPublicKey implements PubTextEncoding {
   PubTextSource? source;
 
   //================================================================
+  // Methods
 
+  //----------------------------------------------------------------
+  /// Type of key
+  ///
+  /// This is the value at the beginning of the string and is repeated at the
+  /// beginning of the [data].
+
+  String get keyType => BinaryRange(data).nextString();
+
+  //----------------------------------------------------------------
   /// Encode as text.
   ///
   /// Produced the single-line representation.

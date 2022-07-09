@@ -1,10 +1,11 @@
 # Changelog
 
-## 0.8.0-beta
+## 0.8.0
 
 - Support for unencrypted PKCS#1 private keys.
 - Fixed parsing bug when there is no comment in an OpenSSH public key.
 - Made members of BinaryRange private.
+- Added GenericPublicKey for other key-types in the OpenSSH Public Key format.
 
 ## 0.7.1
 

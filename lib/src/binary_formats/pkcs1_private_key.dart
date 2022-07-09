@@ -274,6 +274,8 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
     if (_coefficient != prime2.modInverse(prime1)) {
       throw FormatException('invalid coefficient');
     }
+
+    return null;
   }
 
   //----------------------------------------------------------------

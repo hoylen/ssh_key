@@ -81,6 +81,14 @@ String _publicKeyEncode(
   } else if (pcPubKey is pointy_castle.RSAPublicKey) {
     return _publicKeyEncode(
         RSAPublicKeyWithInfo.fromRSAPublicKey(pcPubKey), format);
+  } else if (pcPubKey is GenericPublicKey) {
+    switch (format) {
+      case PubKeyEncoding.openSsh:
+        return pcPubKey.encodeOpenSsh();
+      default:
+        throw KeyUnsupported('unsupported format: GenericPublicKey can only be'
+            ' encoded into the PubKeyEncoding.openSsh format');
+    }
   } else {
     throw KeyUnsupported('unsupported type: ${pcPubKey.runtimeType}');
   }
@@ -92,14 +100,15 @@ String _publicKeyEncode(
 //----------------------------------------------------------------
 /// Decodes the first public key from text.
 ///
-/// Whitespace before the public key is ignored. By default, any non-whitespace
-/// preamble before the key is not allowed. To ignore non-whitespace preamble,
-/// set [allowPreamble] to true. Note: not all formats allow preamble.
-///
 /// ### Result
 ///
 /// Returns first public key in [str], starting at [offset] (or the
 /// beginning of the string if no offset is provided).
+///
+/// If there are multiple public keys in the string, only the first is returned.
+/// The others can be obtained by invoking this function again, with an offset
+/// into the string that is after that first public key: which can be obtained
+/// by examining the _source_ member in the result.
 ///
 /// Returns a Pointy Castle `PublicKey`, which is an abstract
 /// class. The program should determine what the actual type is and then cast it
@@ -108,13 +117,29 @@ String _publicKeyEncode(
 /// ```
 /// final k = publicKeyDecode(str);
 /// if (k is RSAPublicKeyWithInfo) {
-///   final rsaKey = k as RSAPublicKeyWithInfo;
-///   // use the public key
+///   // use the RSA public key object
+///
+/// } else if (k is GenericPublicKey) {
+///   // use the generic public key object
+///   // this type is returned for the OpenSSH Public Key format (i.e. the
+///   // one line format) when the key-type is not recognised
+///   // (i.e. when the key-type is not "ssh-rsa").
 /// }
 /// ```
 ///
 /// The text before and after the public key can be identified by examining
 /// the _source_ member in the result (after casting it into its actual type).
+///
+/// ### Whitespace
+///
+/// Any whitespace before the public key is always ignored.
+///
+/// Preamble before the public key can be ignored if [allowPreamble] is set
+/// to true. It is set to false by default, which means the public key must
+/// start with the first non-whitespace character. Only some public key formats
+/// allow preamble, which is arbitrary text that before the public key
+/// (these formats are those where the start of the public key can be detected,
+/// such as those that start with a "-----BEGIN ...-----" line).
 ///
 /// ### Exceptions
 ///
@@ -134,9 +159,58 @@ pointy_castle.PublicKey publicKeyDecode(String str,
   if (offset < 0) {
     throw ArgumentError.value(offset, 'offset', 'is negative');
   }
-  var p = offset;
 
-  // Skip leading whitespace
+  KeyException? exceptionFromTryingOpenSshFormat;
+
+  final p = _skipWhitespace(str, offset); // skip leading whitespace
+  if (p != str.length) {
+    // Phase 1: try OpenSSH format.
+    //
+    // Since it is the only format that cannot skip preamble, if it exists in
+    // the string it must start at the very first non-whitespace character.
+
+    try {
+      final found = _publicKeyDecodeOpenSshFormat(str, p);
+      if (found != null) {
+        return found;
+      }
+    } on KeyException catch (e) {
+      // Save exception for use after trying the non-OpenSSH format
+      // This exception contains more detail about what went wrong, if it was
+      // trying to parse an OpenSSH format public key.
+      exceptionFromTryingOpenSshFormat = e;
+    }
+
+    // Phase 2: try the other (i.e. non-OpenSSH public key) formats.
+    //
+    // This must be tried AFTER trying the OpenSSH public key format, in case the
+    // string contained multiple public keys and there was an OpenSSH public key
+    // format before the public key in the other format. If [allowPreamble] is
+    // true, it could treat that OpenSSH public key as preamble and skip over it.
+    // Having multiple public keys, with different formats, in the same string
+    // is highly unlikely, but this code can correctly handle it.
+
+    final found =
+        _publicKeyDecodeOtherFormats(str, p, allowPreamble: allowPreamble);
+    if (found != null) {
+      return found;
+    }
+  }
+
+  throw exceptionFromTryingOpenSshFormat ?? KeyMissing('no public key found');
+}
+
+//----------------
+/// Skips whitespace characters.
+///
+/// Returns the position into [str] of the next non-whitespace character,
+/// at or after the [start] position.
+///
+/// Returns the last position (i.e. _str.length_) if the rest of the string
+/// after the _start_ position are whitespace characters.
+
+int _skipWhitespace(String str, int start) {
+  var p = start;
 
   while (p < str.length) {
     final ch = str[p];
@@ -147,25 +221,34 @@ pointy_castle.PublicKey publicKeyDecode(String str,
     }
   }
 
-  // Try OpenSSH format (since it is the only one that cannot skip preamble)
+  return p;
+}
 
-  if (str.startsWith('ssh-', p)) {
-    // Assume it is OpenSSH format
+//----------------
+/// Try to parse an OpenSSH public key.
 
-    final openSsh = OpenSshPublicKey.decode(str, offset: p);
+pointy_castle.PublicKey? _publicKeyDecodeOpenSshFormat(String str, int p) {
+  // if (str.startsWith('ssh-', p)) {
 
-    // The comment (if any) is included as a header
-    final headers = <SshPublicKeyHeader>[];
+  // Assume it is OpenSSH format
 
-    final c = openSsh.comment;
-    if (c != null) {
-      headers.add(SshPublicKeyHeader(SshPublicKeyHeader.commentTag, c));
-    }
+  final openSsh = OpenSshPublicKey.decode(str, offset: p);
 
-    return _keyFromOpenSshChunksAndHeaders(
-        openSsh.data, headers, openSsh.source);
+  // The comment (if any) is included as a header
+  final headers = <SshPublicKeyHeader>[];
+
+  final c = openSsh.comment;
+  if (c != null) {
+    headers.add(SshPublicKeyHeader(SshPublicKeyHeader.commentTag, c));
   }
 
+  return _keyFromOpenSshChunksAndHeaders(openSsh.data, headers, openSsh.source);
+}
+
+//----------------
+
+pointy_castle.PublicKey? _publicKeyDecodeOtherFormats(String str, int p,
+    {required bool allowPreamble}) {
   // Fall through to try remaining formats
   // They all must start with four or five hyphens
 
@@ -219,7 +302,7 @@ pointy_castle.PublicKey publicKeyDecode(String str,
     }
   }
 
-  throw KeyMissing('no public key found');
+  return null;
 }
 
 //----------------------------------------------------------------
@@ -229,7 +312,7 @@ pointy_castle.PublicKey publicKeyDecode(String str,
 
 pointy_castle.PublicKey _keyFromOpenSshChunksAndHeaders(Uint8List bytes,
     Iterable<SshPublicKeyHeader> headers, PubTextSource? source) {
-  RSAPublicKeyWithInfo result;
+  pointy_castle.PublicKey result;
 
   final keyType = BinaryRange(bytes).nextString();
 
@@ -241,22 +324,32 @@ pointy_castle.PublicKey _keyFromOpenSshChunksAndHeaders(Uint8List bytes,
     //   result = KeyPublicDsa._fromBinaryChunks(chunks, source);
     //   break;
     default:
-      throw KeyUnsupported('unsupported key-type: $keyType');
+      // Not a recognised key-type
+      result = GenericPublicKey._fromOpenSSH(bytes, source: source);
+      break;
   }
 
   // Set properties from the headers
 
-  for (final hdr in headers) {
-    var value = hdr.value;
-    if (hdr.tag.toLowerCase() == SshPublicKeyHeader.commentTag &&
-        value.startsWith('"') &&
-        value.endsWith('"') &&
-        2 <= value.length) {
-      // Remove quotation marks as recommended by section 3.3.2 of RFC 4716
-      value = value.substring(1, value.length - 1);
-    }
+  assert(result is PublicKeyMixin, 'unexpected type for the result from above');
+  if (result is PublicKeyMixin) {
+    // Both [RSAPublicKeyWithInfo] and [GenericPublicKey] have this mixin, so
+    // this should always be true.
 
-    result.properties.add(hdr.tag, value);
+    final objectWithProperties = result as PublicKeyMixin;
+
+    for (final hdr in headers) {
+      var value = hdr.value;
+      if (hdr.tag.toLowerCase() == SshPublicKeyHeader.commentTag &&
+          value.startsWith('"') &&
+          value.endsWith('"') &&
+          2 <= value.length) {
+        // Remove quotation marks as recommended by section 3.3.2 of RFC 4716
+        value = value.substring(1, value.length - 1);
+      }
+
+      objectWithProperties.properties.add(hdr.tag, value);
+    }
   }
 
   return result;
