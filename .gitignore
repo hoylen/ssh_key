@@ -3,8 +3,9 @@
 .packages
 .dart_tool/
 
-coverage
 example/output
+coverage
+doc
 
 # Dart package: do not commit the pubspec.lock file
 pubspec.lock

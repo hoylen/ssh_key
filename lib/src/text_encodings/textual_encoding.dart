@@ -223,7 +223,7 @@ class TextualEncoding implements PubTextEncoding {
       label = str.substring(labelBegin, labelEnd);
       source = TextSource._internal(str, offsetBegin, p);
     } on FormatException catch (e) {
-        throw KeyBad('invalid encapsulated encoding: ${e.message}');
+      throw KeyBad('invalid encapsulated encoding: ${e.message}');
     }
   }
 

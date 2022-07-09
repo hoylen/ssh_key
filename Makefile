@@ -1,13 +1,13 @@
-# Makefile
+# Makefile for ssh_key
 
 .PHONY: help format test coverage doc clean
 
 help:
 	@echo "Make targets:"
-	@echo "  format    reformat code"
-	@echo "  test      run unit tests and example tests"
-	@echo "  coverage  run coverage on unit tests *"
-	@echo "  doc       generate Dart documentation *"
+	@echo "  format    format Dart code"
+	@echo "  test      run tests (unit tests and example tests)"
+	@echo "  coverage  run coverage on tests *"
+	@echo "  doc       generate documentation *"
 	@echo "  clean     delete generated files"
 	@echo
 	@echo '* "coverage-open" and "doc-open" to run and then open the HTML'
@@ -22,17 +22,17 @@ help:
 # Development
 
 format:
-	@dart format lib test examples
+	dart format lib test examples
 
 #----------------------------------------------------------------
 # Testing
 
-test: unit-tests example-test
+test: test-unit test-example
 
-unit-tests:
-	@dart run test
+test-unit:
+	dart run test
 
-example-test:
+test-example:
 	@example/tests-run.sh all
 
 # Coverage tests require "lcov"
@@ -55,12 +55,14 @@ coverage-open: coverage
 # Documentation
 
 doc:
-	@dart doc --output-dir "doc" `pwd`
+	dart doc
 
 doc-open: doc
-	open doc/index.html
+	open doc/api/index.html
 
 #----------------------------------------------------------------
 
 clean:
 	@rm -rf "example/output" coverage doc
+
+#EOF

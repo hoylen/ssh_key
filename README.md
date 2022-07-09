@@ -317,20 +317,26 @@ other cryptographic algorithms in Dart._
 
 Single-line format used by older versions of OpenSSH.
 
+This format is used in _~/.ssh/known_hosts_ and
+_~/.ssh/authorized_keys_ files.
+
+RSA public key:
+
 ```
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDYwd6O4Z+STMxTlFCPcN8VAq9ZNKvaQRYbsEDKK0ydvTxdwt72xRo8supYX1vgDgRpYBhgDy8OPEMLDuk61sXRdbTITFW1B98rUsvvLEYHM4wJQnkWZvcyZz79id2H3r75ow+EL6SF4zxrSnJ9Ax09cKN2oM3nQUn0jkaqG4Hb/thbKbF8SzevBrcI0Ld4K64Mduc2XQbW2qMikT4xPBtu7bwPuP1XhipZOBcCBnXdrWCZk6pfYtA/aq5En7a2JAyglIpEsAIbtSVmj62BgstmSOy/4tQjVinh6IG8y8ixq59GbmC8KP9zUQ3hhLfT/nqreXpeh039cotUTWJHyVOB user@example.com'
 ```
+
+Ed25519 public key:
 
 ```
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHlm47YRgXlI/6nKEdV6RuXEBLDFdJTfvb/pPEgO6/FE
 ```
 
+Elliptic Curve Digital Signature Algorithm:
+
 ```
 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLSZ2G4sjk7qtIVlgx9AZsl3XZtgci0kK54Nef6xxwqas5V3v37DkgIKbER+Yx6GQ7VL3qrfha1pSLmn04qUQg4=
 ```
-
-This format is used in _~/.ssh/known_hosts_ and
-_~/.ssh/authorized_keys_ files.
 
 ### SSH Public Key
 
