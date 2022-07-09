@@ -209,7 +209,12 @@ class TextualEncoding implements PubTextEncoding {
           '+'.codeUnitAt(0) == ch ||
           '/'.codeUnitAt(0) == ch ||
           '='.codeUnitAt(0) == ch) {
+        // valid character: use
         encapsulatedData.writeCharCode(ch);
+      } else if (' \t\n\r'.codeUnits.contains(ch)) {
+        // whitespace: ignore
+      } else {
+        throw KeyBad('unexpected character in base64 text: charcode=${ch}');
       }
     }
     try {
@@ -218,11 +223,7 @@ class TextualEncoding implements PubTextEncoding {
       label = str.substring(labelBegin, labelEnd);
       source = TextSource._internal(str, offsetBegin, p);
     } on FormatException catch (e) {
-      if (e.message == 'Invalid length, must be multiple of four') {
-        throw KeyBad('incomplete encapsulated data');
-      } else {
-        throw KeyBad('unexpected: ${e.message}');
-      }
+        throw KeyBad('invalid encapsulated encoding: ${e.message}');
     }
   }
 

@@ -85,9 +85,7 @@ void parsingValidInput() {
 //----------------------------------------------------------------
 
 void parsingInvalidInput() {
-  group('invalid input', () {
-
-  });
+  group('invalid input', () {});
 }
 
 //================================================================

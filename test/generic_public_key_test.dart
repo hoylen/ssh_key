@@ -145,12 +145,12 @@ void decode() {
       try {
         final pk = OpenSshPublicKey.decode('a AAAAAWEAAAABKg==\t');
       } on KeyBad catch (e) {
-        expect(e.message, equals('OpenSSH Public Key: base64 terminated incorrectly'));
+        expect(e.message,
+            equals('OpenSSH Public Key: base64 terminated incorrectly'));
       }
     });
   });
 }
-
 
 //----------------------------------------------------------------
 
@@ -159,7 +159,8 @@ void encode() {
     const testCases = {
       'ed25519 AAAAB2VkMjU1MTkAAAABKg==': null,
       'ed25519 AAAAB2VkMjU1MTkAAAABKg== foobar': 'foobar',
-      'ed25519 AAAAB2VkMjU1MTkAAAABKg== CR   AND LF   become spaces': 'CR \n AND LF \r become spaces',
+      'ed25519 AAAAB2VkMjU1MTkAAAABKg== CR   AND LF   become spaces':
+          'CR \n AND LF \r become spaces',
     };
 
     for (final entry in testCases.entries) {
@@ -177,7 +178,6 @@ void encode() {
         expect(enc, equals('$expectedEncoding\n'));
       });
     }
-
   });
 }
 //================================================================

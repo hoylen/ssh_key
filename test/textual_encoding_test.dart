@@ -13,6 +13,12 @@ import 'package:ssh_key/ssh_key.dart' show KeyMissing, KeyBad;
 
 final Uint8List exampleData = Uint8List.fromList(utf8.encode('Hello World!'));
 
+const exampleEncoding = '''
+-----BEGIN EXAMPLE-----
+SGVsbG8gV29ybGQh
+-----END EXAMPLE-----
+''';
+
 //================================================================
 
 void groupEncode() {
@@ -27,11 +33,9 @@ void groupEncode() {
       test('example', () {
         final te = TextualEncoding('EXAMPLE', exampleData);
 
-        expect(
-            te.encode(),
-            equals('-----BEGIN EXAMPLE-----\n'
-                'SGVsbG8gV29ybGQh\n'
-                '-----END EXAMPLE-----\n'));
+        expect(te.encode(), equals(exampleEncoding));
+
+        expect(te.source, isNull); // since it was not created by parsing text
       });
 
       //----------------
@@ -97,12 +101,13 @@ void groupDecode() {
     group('valid', () {
       //----------------
       test('empty data', () {
-        final te = TextualEncoding.decode(
-            '-----BEGIN EXAMPLE----------END EXAMPLE-----');
+        const encoding = '-----BEGIN EXAMPLE----------END EXAMPLE-----';
+        final te = TextualEncoding.decode('$encoding extra text ignored');
         expect(te.label, equals('EXAMPLE'));
         expect(te.data, equals(<int>[]));
         expect(te.source!.begin, equals(0));
-        expect(te.source!.end, equals(44));
+        expect(te.source!.end, equals(encoding.length));
+        expect(te.source!.decodedText, equals(encoding));
 
         expect(te.data.length, equals(0));
       });
@@ -139,6 +144,13 @@ SGVsbG8gV29ybGQh
           expect(e.message, equals('no Textual Encoding'));
         }
 
+        try {
+          TextualEncoding.decode(textWithPreamble, allowPreamble: false);
+          fail('did not throw exception');
+        } on KeyMissing catch (e) {
+          expect(e.message, equals('no Textual Encoding'));
+        }
+
         // Succeeds if preamble is allowed
 
         final te =
@@ -147,16 +159,33 @@ SGVsbG8gV29ybGQh
         expect(te.data, equals(exampleData));
         expect(te.source!.begin, equals(197));
         expect(te.source!.end, equals(260));
+
+        // Also succeeds if offset is set to after the preamble
+
+        final te2 = TextualEncoding.decode(textWithPreamble, offset: 197);
+        expect(te2.label, equals('EXAMPLE'));
+
+        // Fails if allow preamble to be skipped, but no encoding found
+
+        try {
+          TextualEncoding.decode('foo\bar\baz', allowPreamble: true);
+          fail('did not throw exception');
+        } on KeyMissing catch (e) {
+          expect(e.message, equals('no Textual Encoding found'));
+        }
       });
 
       //----------------
+      /* This test was wrong: non-base64 characters should not be silently
+         ignored, but should be an error.
+
       test('non-base64 characters ignored', () {
         final te = TextualEncoding.decode('''
 -----BEGIN EXAMPLE-----
 SGVs....bG8g
 \t \n \r \b
      !   "   #   \$  %   &   '
- (   )   *       ,   -   .    
+ (   )   *       ,   -   .
          :   ;   <       >   ?
  @
              [   \\  ]   ^   _
@@ -172,6 +201,7 @@ bGQh
         expect(te.source!.begin, equals(0));
         expect(te.source!.end, equals(243));
       });
+       */
     });
 
     //----------------------------------------------------------------
@@ -217,7 +247,7 @@ SGVsbG8gV29ybGQh
 
       //----------------
       test('post-encapsulation boundary does not end with -----', () {
-        // has 4 hyphens instead of 5
+        // has 4 hyphens instead of 5 in the post-encapsulation boundary
         try {
           TextualEncoding.decode('''
 -----BEGIN EXAMPLE-----
@@ -231,9 +261,9 @@ SGVsbG8gV29ybGQh
       });
 
       //----------------
-      test('bad base-64', () {
-        // has 4 hyphens instead of 5
+      test('bad base-64: incomplete encoding', () {
         try {
+          // Missing one character from end of encoding
           TextualEncoding.decode('''
 -----BEGIN EXAMPLE-----
 SGVsbG8gV29ybGQ
@@ -241,7 +271,81 @@ SGVsbG8gV29ybGQ
 ''');
           fail('did not throw exception');
         } on KeyBad catch (e) {
-          expect(e.message, equals('incomplete encapsulated data'));
+          expect(
+              e.message,
+              equals(
+                  'invalid encapsulated encoding: Invalid length, must be multiple of four'));
+        }
+      });
+
+      //----------------
+      test('bad base-64: non-base64 character', () {
+        try {
+          TextualEncoding.decode('''
+-----BEGIN EXAMPLE-----
+% percentage is not a valid RFC 4648 base64 character
+-----END EXAMPLE-----
+''');
+          fail('did not throw exception');
+        } on KeyBad catch (e) {
+          expect(e.message, startsWith('unexpected character in base64 text:'));
+        }
+      });
+
+      //----------------
+      test('bad base-64 unexpected extra padding', () {
+        try {
+          TextualEncoding.decode('''
+-----BEGIN EXAMPLE-----
+SGVsbG8gV29ybGQh=
+-----END EXAMPLE-----
+''');
+          fail('did not throw exception');
+        } on KeyBad catch (e) {
+          expect(e.message,
+              equals('invalid encapsulated encoding: Invalid character'));
+        }
+      });
+    });
+
+    //----------------------------------------------------------------
+
+    //----------------
+    group('miscellaneous', () {
+      test('good value is good', () {
+        // Make sure the [goodValue] is valid, otherwise the following tests
+        // that are based on it might produce false negatives.
+        final t = TextualEncoding.decode(exampleEncoding);
+        expect(t.label, equals('EXAMPLE'));
+        expect(t.data, equals(exampleData));
+      });
+
+      test('CR-LF as line endings is good', () {
+        final t =
+            TextualEncoding.decode(exampleEncoding.replaceAll('\n', '\r\n'));
+        expect(t.label, equals('EXAMPLE'));
+        expect(t.data, equals(exampleData));
+      });
+
+      test('CR as line endings is good', () {
+        final t =
+            TextualEncoding.decode(exampleEncoding.replaceAll('\n', '\r'));
+        expect(t.label, equals('EXAMPLE'));
+        expect(t.data, equals(exampleData));
+      });
+
+      test('leading whitespace ignored', () {
+        final t = TextualEncoding.decode('  \n   \n  $exampleEncoding');
+        expect(t.label, equals('EXAMPLE'));
+        expect(t.data, equals(exampleData));
+      });
+
+      test('negative offset throws exception', () {
+        try {
+          TextualEncoding.decode(exampleEncoding, offset: -1);
+          fail('did not throw exception');
+        } on ArgumentError catch (e) {
+          expect(e.message, equals('is negative'));
         }
       });
     });

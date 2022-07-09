@@ -1,5 +1,5 @@
 name: ssh_key
-version: 0.8.0-beta
+version: 0.8.0
 description: Encodes and decodes keys to/from different text file formats.
 homepage: https://github.com/hoylen/ssh_key
 
@@ -16,5 +16,6 @@ dependencies:
 # must use 3.2.0 or newer.
 
 dev_dependencies:
+  coverage: ^1.5.0
   lints: ^1.0.1
   test: '^1.15.4'
