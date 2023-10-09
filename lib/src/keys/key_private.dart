@@ -170,7 +170,6 @@ pointy_castle.PrivateKey privateKeyDecode(String str,
     if (teBlock.label == 'OPENSSH PRIVATE KEY') {
       // Starts with: -----BEGIN OPENSSH PRIVATE KEY-----
       return _privateKeyDecodeOpenSSH(teBlock, p); // new OpenSSH format
-
     } else if (teBlock.label == _rsaPrivatePkcs1label) {
       // Starts with: -----BEGIN RSA PRIVATE KEY-----
       // Unencrypted old OpenSSH format (also known as PKCS#1).

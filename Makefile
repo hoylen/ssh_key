@@ -8,6 +8,7 @@ help:
 	@echo "  test      run tests (unit tests and example tests)"
 	@echo "  coverage  run coverage on tests *"
 	@echo "  doc       generate documentation *"
+	@echo "  pana      run pana"
 	@echo "  clean     delete generated files"
 	@echo
 	@echo '* "coverage-open" and "doc-open" to run and then open the HTML'
@@ -59,6 +60,12 @@ doc:
 
 doc-open: doc
 	open doc/api/index.html
+
+#----------------------------------------------------------------
+# Publication
+
+pana:
+	dart run pana
 
 #----------------------------------------------------------------
 

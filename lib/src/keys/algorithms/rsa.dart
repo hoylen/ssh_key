@@ -384,10 +384,10 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
   /// Encode into the OpenSSH Private Key format.
 
   String encodeOpenSshPrivateKey() {
-    final parts = _encodeOpenSshPrivateParts();
+    final (pubBytes, paddedPvt) = _encodeOpenSshPrivateParts();
 
     final container = OpenSshPrivateKey(
-        'none', 'none', Uint8List.fromList(<int>[]), parts.item1, parts.item2);
+        'none', 'none', Uint8List.fromList(<int>[]), pubBytes, paddedPvt);
 
     return TextualEncoding('OPENSSH PRIVATE KEY', container.encode()).encode();
   }
@@ -418,7 +418,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
   ///
   /// Public bytes and private bytes
 
-  Tuple2<Uint8List, Uint8List> _encodeOpenSshPrivateParts() {
+  (Uint8List, Uint8List) _encodeOpenSshPrivateParts() {
     // Encode the public part
 
     final pubBytes =
@@ -466,7 +466,7 @@ class RSAPrivateKeyWithInfo extends pointy_castle.RSAPrivateKey
 
     // Return the two text_encodings
 
-    return Tuple2(pubBytes, paddedPvt);
+    return (pubBytes, paddedPvt);
   }
 
   _EncodedPuttyPrivateParts _encodePuttyPrivateParts() {

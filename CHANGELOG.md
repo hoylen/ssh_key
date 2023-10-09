@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0
+
+- Upgraded to require a minimum of Dart 3.0.0.
+- Upgrade dependencies: removing tuple and requiring pointycastle v3.7.3.
+
 ## 0.8.0
 
 - Support for unencrypted PKCS#1 private keys.

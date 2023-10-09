@@ -27,8 +27,6 @@ Uint8List dataForOpenSshFormat(String keyType, [Uint8List? bytes]) {
 
 void valid() {
   group('valid data', () {
-    final testKeyType = 'a';
-
     final testCases = {
       'a AAAAAWEAAAABKg==': dataForOpenSshFormat('a'),
       'ab AAAAAmFiAAAAASo=': dataForOpenSshFormat('ab'),
@@ -100,7 +98,7 @@ void invalid() {
           final x = GenericPublicKey(data);
           x.encode(PubKeyEncoding.openSsh);
           fail('succeeded when it should have failed');
-        } on KeyBad catch (e) {
+        } on KeyBad {
           // expected exception
         }
       });
@@ -128,6 +126,7 @@ void decode() {
     test('base64 missing padding', () {
       try {
         final pk = OpenSshPublicKey.decode('a AAAAAWEAAAABKg'); // missing ==
+        fail('exception not thrown: $pk');
       } on KeyBad catch (e) {
         expect(e.message, equals('OpenSSH Public Key: base64 invalid'));
       }
@@ -136,6 +135,7 @@ void decode() {
     test('base64 has invalid character', () {
       try {
         final pk = OpenSshPublicKey.decode('a AAAAAWEAAAABKg~'); // ~ not base64
+        fail('exception not thrown: $pk');
       } on KeyBad catch (e) {
         expect(e.message, equals('OpenSSH Public Key: Invalid character'));
       }
@@ -144,6 +144,7 @@ void decode() {
     test('base64 ends with a tab rather than a space', () {
       try {
         final pk = OpenSshPublicKey.decode('a AAAAAWEAAAABKg==\t');
+        fail('exception not thrown: $pk');
       } on KeyBad catch (e) {
         expect(e.message,
             equals('OpenSSH Public Key: base64 terminated incorrectly'));

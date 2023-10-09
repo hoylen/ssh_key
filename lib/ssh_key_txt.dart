@@ -14,7 +14,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:pointycastle/export.dart' as pointy_castle;
-import 'package:tuple/tuple.dart';
 
 import 'package:ssh_key/ssh_key_bin.dart';
 import 'package:ssh_key/ssh_key.dart'

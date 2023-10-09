@@ -78,10 +78,9 @@ class Pkcs1RsaPublicKey implements BinaryFormat {
         if (n is ASN1Integer && e is ASN1Integer) {
           // Success
 
-          modulus = n.valueAsBigInteger!;
-          exponent = e.valueAsBigInteger!;
+          modulus = n.valueAsBigInteger;
+          exponent = e.valueAsBigInteger;
           return; // success
-
         } else {
           throw KeyBad('n and/or e are not ASN.1 Integers');
         }

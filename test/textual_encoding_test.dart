@@ -405,7 +405,7 @@ l4wOuDwKQa+upc8GftXE2C//4mKANBC6It01gUaTIpo=
 
         expect(s3, const TypeMatcher<ASN1BitString>());
         expect(s3.tag, equals(0x03));
-        final bytes = s3.contentBytes()!;
+        final bytes = s3.contentBytes();
         expect(bytes.length, equals(71));
       } else {
         fail('not an ASN1 Sequence');

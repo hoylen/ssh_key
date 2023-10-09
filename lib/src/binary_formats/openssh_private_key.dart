@@ -245,5 +245,4 @@ class OpenSshPrivateKey implements BinaryFormat {
  */
   //================================================================
   // Static methods
-
 }

@@ -132,12 +132,7 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
         for (int x = 0; x < _numberOfIntegers; x++) {
           final n = topSequence.elements[x];
           if (n is ASN1Integer) {
-            final value = n.valueAsBigInteger;
-            if (value is BigInt) {
-              values.add(value);
-            } else {
-              throw _Pkcs1Msg('ASN.1 sequence item $x does not have a value');
-            }
+            values.add(n.valueAsBigInteger);
           } else {
             throw _Pkcs1Msg('ASN.1 sequence item $x is not an ASN.1 Integer');
           }
@@ -173,7 +168,6 @@ class Pkcs1RsaPrivateKey implements BinaryFormat {
         }
 
         return; // success
-
       } else {
         throw _Pkcs1Msg('ASN.1 encoding is not a sequence');
       }

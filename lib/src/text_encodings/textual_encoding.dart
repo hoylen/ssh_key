@@ -214,7 +214,7 @@ class TextualEncoding implements PubTextEncoding {
       } else if (' \t\n\r'.codeUnits.contains(ch)) {
         // whitespace: ignore
       } else {
-        throw KeyBad('unexpected character in base64 text: charcode=${ch}');
+        throw KeyBad('unexpected character in base64 text: charcode=$ch');
       }
     }
     try {

@@ -102,10 +102,9 @@ class SshPublicKey implements PubTextEncoding {
 
     // Decode the headers (if any)
 
-    final hdr = _decodeHeaders(str, p);
-    headers = hdr.item1;
-
-    p = hdr.item2;
+    final (hdr, posAfterHeaders) = _decodeHeaders(str, p);
+    headers = hdr;
+    p = posAfterHeaders;
 
     // Find end of encoding
 
@@ -277,7 +276,7 @@ class SshPublicKey implements PubTextEncoding {
   /// Returns the position after the new-line at the end of the last header
   /// line.
 
-  static Tuple2<List<SshPublicKeyHeader>, int> _decodeHeaders(
+  static (List<SshPublicKeyHeader>, int) _decodeHeaders(
       String content, int start) {
     // Note: keys are case insensitive
     final headers = <SshPublicKeyHeader>[];
@@ -310,18 +309,18 @@ class SshPublicKey implements PubTextEncoding {
           // implementation is more flexible and allows for it to be omitted.
         }
 
-        final v = _decodeValue(content, p);
-        if (1024 < v.item1.length) {
+        final (value, positionAfterValue) = _decodeValue(content, p);
+        if (1024 < value.length) {
           throw KeyBad('header-value too long');
         }
 
         // Record header (note: any double quotes in comments are preserved)
 
-        headers.add(SshPublicKeyHeader(tag, v.item1));
+        headers.add(SshPublicKeyHeader(tag, value));
 
         // Continue parsing after the header
 
-        p = v.item2;
+        p = positionAfterValue;
         lineStart = p;
 
         while (
@@ -353,7 +352,7 @@ class SshPublicKey implements PubTextEncoding {
     }
 
     // End of line or content reached without finding a colon (header line)
-    return Tuple2(headers, lineStart);
+    return (headers, lineStart);
   }
 
   //----------------
@@ -366,7 +365,7 @@ class SshPublicKey implements PubTextEncoding {
   /// Returns the value and the offset after the new-line at the end of the
   /// value.
 
-  static Tuple2<String, int> _decodeValue(String content, int start) {
+  static (String, int) _decodeValue(String content, int start) {
     final value = StringBuffer();
 
     var p = start;
@@ -398,7 +397,7 @@ class SshPublicKey implements PubTextEncoding {
       }
     }
 
-    return Tuple2(value.toString(), p);
+    return (value.toString(), p);
   }
 }
 

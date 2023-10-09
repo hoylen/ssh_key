@@ -86,7 +86,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:asn1lib/asn1lib.dart';
-import 'package:tuple/tuple.dart';
 
 // This package uses the PointyCastle package for the hashing algorithms
 // (instead of the crypto package, which only supports hashing algorithms),
